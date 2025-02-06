@@ -1,0 +1,17 @@
+@use './mixins.scss';
+
+.shell {
+	position: relative;
+	z-index: 5;
+	max-width: calc( #{$shell-max-width} + #{$shell-gutter} * 2);
+	padding-left: $shell-gutter;
+	padding-right: $shell-gutter;
+	margin: 0 auto;
+	width: 100%;
+}
+
+/* Shell Fluid */
+
+.shell--fluid {
+	max-width: none;
+}

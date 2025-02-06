@@ -1,0 +1,54 @@
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 as builder
+
+#Build - Stage 1
+# Create a working directory
+WORKDIR /app
+
+# Copy the .csproj file and restore
+COPY ./worker/src/Worker/Worker.csproj .
+RUN dotnet restore
+
+# Copy source files to the image
+COPY ./worker/src/Worker/ .
+
+# Build the project
+RUN dotnet build -c Release -o /out Worker.csproj
+
+#Run App - Stage 2
+# Specify app image
+FROM mcr.microsoft.com/dotnet/core/runtime:3.1
+
+# Specify working directory for this stage
+WORKDIR /app
+
+# Tell Docker what command to run when our image is executed inside a container
+ENTRYPOINT ["dotnet", "Worker.dll"]
+
+# Copy the /out directory from the build stage into the runtime image
+COPY --from=builder /out .
+
+
+# *************** IMPROVED VERSION ********************
+#  dotnet publish command automatically restores dependencies before building the project.
+# Use a specific version of the .NET Core SDK as the builder stage
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 as builder
+
+# Build - Stage 1
+WORKDIR /app
+
+# Copy the entire source directory and restore dependencies
+COPY ./worker/src/Worker/ .
+
+# Build the project and publish to /out
+RUN dotnet publish -c Release -o /out
+
+# Run App - Stage 2
+FROM mcr.microsoft.com/dotnet/core/runtime:3.1
+
+WORKDIR /app
+
+# Specify the default command to run
+ENTRYPOINT ["dotnet", "Worker.dll"]
+
+# Copy only necessary files from the builder stage
+COPY --from=builder /out .

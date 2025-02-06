@@ -1,0 +1,16 @@
+FROM openjdk:11-jre-slim
+
+# set metadata
+LABEL maintainer="ivaylo rashkov"
+
+# Create variable containing the jar
+ARG JAR_FILE=target/*.jar
+
+# rename jar file to app.jar
+COPY ${JAR_FILE} app.jar
+
+#Expose port where app runs
+EXPOSE 8080
+
+#Command to run the app
+ENTRYPOINT [ "java", "-jar", "/app.jar" ]

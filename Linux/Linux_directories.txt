@@ -1,0 +1,43 @@
+/ -> root
+
+/var/logs -> logs
+
+/bin ->  Applications such as Firefox are stored in /usr/bin, 
+while important system programs and utilities such as the bash shell are located in /bin.
+
+/boot -> contains the files needed to boot the system
+
+/cdrom  -> 
+
+/dev ->contains a number of special files that represent devices.
+Example: /dev/sda represents the first SATA drive in the system.
+
+/etc -> /etc directory contains configuration files,
+which can generally be edited by hand in a text editor.
+
+/home ->  contains a home folder for each user.
+
+/lib ->contains libraries needed by the essential binaries in the /bin and /sbin folder.
+Libraries needed by the binaries in the /usr/bin folder are located in /usr/lib.
+
+/lost+found — Recovered Files.
+If the file system crashes, a file system check will be performed at next boot.
+Any corrupted files found will be placed in the lost+found directory, 
+so you can attempt to recover as much data as possible.
+
+/media -> e /media directory contains subdirectories where removable media devices inserted
+into the computer are mounted
+
+/mnt -> is where system administrators mounted temporary file systems while using them.\\
+
+
+alias
+
+
+
+
+
+
+
+
+

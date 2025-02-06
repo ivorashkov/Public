@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+    app:
+      build: .
+      image: posioregistryivo.azurecr.io/posio:latest
+      volumes:
+        - app:/posio
+      environment:
+        - POSIO_SETTINGS=/app/config.py
+      ports:
+        - 5000:5000
+volumes:
+    app:
+        driver: azure_file
+        driver_opts:
+          share_name: posio-volume
+          storage_account_name: posiostorageaccivo

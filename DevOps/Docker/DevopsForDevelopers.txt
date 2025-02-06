@@ -1,0 +1,962 @@
+DevOps For Developers
+ln -> soft/hard links {трябва да го проверя повече}
+The ln command in Linux is used to create links between files
+or directories. It is primarily used for creating
+either hard links or symbolic links (also known as soft links).
+
+ln [options] <source> <target>
+
+Here, source represents the file or directory you want
+ to link to, and target represents the name of the 
+ link you want to create. If the target is a directory,
+ the link will be created inside that directory.
+ 
+To create a hard link, you can use the ln command without any options:
+ln <source> <target> -> For example, ln file1.txt link1.txt 
+
+To create a symbolic link, you can use the -s option with the ln command:
+ln -s <source> <target>
+
+For example, ln -s /path/to/file1.txt link1.txt creates
+a symbolic link named link1.txt pointing to /path/to/file1.txt.
+
+Some common options for the ln command include:
+
+-s, --symbolic: Create a symbolic link.
+-f, --force: Remove existing destination files if they exist.
+-i, --interactive: Prompt before overwriting an existing destination file.
+-n, --no-dereference: Treat the source file as a normal file if it is a symbolic link to a directory.
+-v, --verbose: Display verbose output, showing the actions performed.
+
+************************************************
+The sed command in Linux is a powerful stream editor that is used 
+to perform text manipulation and transformation 
+on files or input streams.
+The name "sed" stands for "stream editor." 
+It reads text from an input source, applies specified operations 
+or transformations to the text, and then outputs the modified text.
+
+sed [options] 'command' [input-file]
+
+s/search/replace/: Substitutes the first occurrence of "search" with "replace" on each line. For example, sed 's/foo/bar/' file.txt replaces the first occurrence of "foo" with "bar" on each line of "file.txt".
+
+s/search/replace/g: Substitutes all occurrences of "search" with "replace" on each line. The 'g' at the end stands for "global." For example, sed 's/foo/bar/g' file.txt replaces all occurrences of "foo" with "bar" on each line of "file.txt".
+
+/pattern/d: Deletes lines that match the specified pattern. For example, sed '/foo/d' file.txt deletes all lines containing the word "foo" from "file.txt".
+
+/pattern/!d: Deletes lines that do not match the specified pattern. For example, sed '/foo/!d' file.txt deletes all lines not containing the word "foo" from "file.txt".
+
+/pattern/p: Prints lines that match the specified pattern. For example, sed -n '/foo/p' file.txt prints all lines containing the word "foo" from "file.txt".
+
+n,m command: Applies the specified command to a range of lines from 'n' to 'm'. For example, sed '2,5d' file.txt deletes lines 2 to 5 from "file.txt".
+
+******************************************************************
+ние сме в директория и искаме да запишем нещо във файл:
+echo 123 > file
+cat file1 2> /dev/null -> пренасочваме файл към /dev/.. като стандартен error
+ако искаме standart output/standart error да отидат в /dev/null
+
+cat file1 > /dev/null/ 2>&1, като 2(standart error), a 1(standart output)
+cat file > newFile 2>&1 -> създава се новия файл с инфото вътре.
+това го ползваме, когато искаме целия резултат + грешките да бъдат записани някъде
+
+Когато искаме standart input обикновено искаме да пренасочим нещо което ни е на няколко реда:
+cat <<EOF > newFile.txt (EOF - end of file, след което ни дава възможност да попълваме
+и за да прекъснем пишем в конзолата EOF), дефакто взема нашия инпут, токато не стигне до 
+EOF(или думата която сме написали).
+
+Полезно е когато искаме да записваме, променим някакви скриптове, които вече са написани,
+имаме готов шаблон, променили сме нещо и използваме тази команда с готовия скрипт.
+
+в Кубернерис, можем да създадем множество YAML обекти по такъв начин.
+
+********************************************************
+set командата ни дава достъп до променливите на сървъра.
+има 2 типа променливи:
+1. Локални - достъпни само от текущия ни шел
+2. Изнесени/Exported - от нашия шел към всяка програма която стартира.
+с env командата можем да видим кои са експортнатите променливи.
+
+като  SET командата е вътрешна и идва със самия терминал, докато env е външна команда
+тя се намира в операционната система на линукса
+
+bash -n ./nqkakavScript.sh -> първо проверява дали има някаква синтактична грешка
+и ни предупреждава, след което махаме -n за да си запалим скрипта.
+
+******************************************************
+Certainly! The file command in Linux is used to determine 
+the type of a file or the nature of its contents. 
+It examines the file's data and provides information 
+about its format, such as whether it is a text file, 
+binary file, compressed file, executable, or other specific file types.
+
+The basic syntax of the file command is as follows:
+file [options] <filenameToRead>
+
+The file command can provide various types of information about a file, including:
+
+File type: The file command identifies the general type of the file, such as ASCII text, JPEG image, ELF executable, shell script, etc.
+
+Encoding: For text files, the file command may provide information about the character encoding used, such as ASCII, UTF-8, ISO-8859, etc.
+
+Architectural information: For executable files, the file command can often determine the target architecture for which the executable was compiled (e.g., x86, ARM, PowerPC).
+
+Compressed files: The file command can detect compressed files and identify the compression algorithm used, such as gzip, bzip2, or ZIP archives.
+
+Shared libraries: When applied to shared library files, the file command can provide information about the library's architecture and other details.
+
+File system types: The file command can also identify the type of file system on a disk image or a partition.
+
+The file command offers several options that can modify its behavior and provide more specific information. Some commonly used options include:
+
+-b, --brief: Provides brief output, omitting the filename and any additional information.
+
+-i, --mime: Prints the MIME type of the file.
+
+-z, --uncompress: Automatically decompresses compressed files and then performs the analysis.
+
+-f, --files-from <file>: Reads the list of filenames from a specified file and analyzes each file.
+
+*******************************************************************
+The stat command in Linux is used to display detailed information 
+about a file or file system. It provides various 
+attributes and metadata associated with a file, such as permissions, 
+ownership, file size, timestamps, and more.
+
+The basic syntax of the stat command is as follows:
+stat [options] <filename>
+
+File type: Indicates the type of the file (regular file, directory, symbolic link, etc.).
+
+Size: Displays the size of the file in bytes.
+
+Device: Shows the device identifier where the file is located.
+
+Inode: Displays the inode number assigned to the file.
+
+Access permissions: Shows the file's access permissions in octal format (e.g., 0644).
+
+Owner and group: Displays the owner and group associated with the file.
+
+Timestamps: Provides information about various timestamps related to the file, including the last access time, last modification time, and last status change time.
+
+File creation time: Shows the time of file creation (not available on all file systems).
+
+File attributes: Indicates any additional file attributes or flags associated with the file.
+
+The stat command offers various options that can modify its behavior and provide additional information. Here are some commonly used options:
+
+-c, --format: Allows you to specify a custom format for the output. You can define the attributes you want to display using format specifiers.
+
+-t, --terse: Provides a terse output format, which displays a minimal set of information.
+
+-f, --file-system: Displays information about the file system containing the file instead of the file itself.
+
+-L, --dereference: If the specified file is a symbolic link, the stat command will show information about the target file rather than the link itself.
+
+********************************************************
+ip a -> показва интерфейсите на ип адресите на машината в която сме.
+hostname -i -> показва само ИП адреса на машината на която сме.
+
+echo $? -> това ни дава exit code-a на предната команда която сме въвели
+
+Бърз пример за скрипт:
+vi script.sh
+--------------------
+#!/bin/bash -> кой шел използваме
+/usr/bin/sleep 300
+while true; do
+	/usr/bin/sleep 5
+	/usr/bin/ping 192.168.11.2 -c 2
+ if[[ $? -ne 0 ]]; then
+	/usr/bin/sleep 2
+	/usr/bin/pint 192.168.11.2 -c 2 || /usr/sbin/reboot
+ fi
+done
+-------------------------
+***************** Docker & Containers *******************
+Какво е контейнеризация? - възможност с която можем да пакетираме 
+едно приложение или услуга и да го инсталираме в контейнер.
+
+Какво е Image - шаблон, който е непрезаписваем (read only template
+a set of instructions for creating a container) съдържа инструкциите 
+с които създаваме контейнер.
+
+Ако искаме да направим контейнер с наше приложение, трябва да му дадем
+редица стъпки през които да мине за да бъде успешно вдигнат и инсталиран
+контейнера.
+
+Обикновено контейнерите са Линукс, но можем да използваме и Windows.
+------Image Layers/Нива на имиджа -----------
+1. Базираме на операционна система;
+2. Инсталираме необходимите компоненти;
+3. Добавяме приложението към Имиджа;
+4. Казваме каква команда да изпълни при първоначалното стартиране;
+----------------------------------------
+Предимството на различните слоеве е, че ако направим промяна в някоя от нашите
+команди(слоеве) при създаване на нашия имидж, ние се базираме на вече 
+същестуващи слоеве които не са променени от нас.
+
+Ние използваме доста слоеве на готово, а правим промени по последните няколко слоя
+и по този начин забързваме създаването на нашия имидж;
+
+Контейнера е инстанция на имиджа който сме използвали.
+Можем да използваме 1 имидж за стартирането на няколко контейнера на 1 и същ сървър
+с леко променена конфигурация.
+
+Всички инструкции за създаването на 1 image се намират в Dockerfile.
+Рънваме с докер команди файла и създаваме Image, който използваме за
+да пуснем Контейнер/и.
+Когато контейнера стартира, има слой, който е презаписваем, този слой
+се използва за да може да се записват логове и тн.
+Според това какво се използва в контейнера, логове, информации и тн,
+могат да направят самия слой да нарастне и да заема повече памет.
+
+Слоят важи само и единствено за 1ния контейнер, ако го изтрием и вдигнем нов
+имидж, той ще си бъде празен както предходния в началото.
+
+Docker Compose -> когато имаме услуга, тя обикновено обхваща няколко приложения
+които работят заедно като 1 цяло.(Tech stack)
+Първите обикновено са stateless, последното/ите са stateful(има необходимост да си запазва данните
+пример - Mysql).
+
+Всеки компонент е по-добре да се изпълнява в отделен докер контейнер.
+Когато искаме да имаме зависимост м/у тях
+(Ако базата не работи, да не се получават заявки и тн.),
+тогава използваме Docker Compose. 
+По този начин свързваме нашите контейнеризация за да може 
+да знаят един за друг/да се обновяват по определен начин и тн.
+
+Какъв е Workflow-a при разработката с Docker Apps.
+1. имаме код;
+2.Записваме необходимите депендънсита за да работи кода
+	2.1. Референция за операционната система;
+	2.2. Инструкции за инсталирането на пакети, необходими на приложението;
+	2.3. Конфигурационен файл за приложението + самото приложение;
+Създава се  Image, който се пази локално и можем да решим дали да го качим в 
+Registry, която е библиотека за такива Image-и.
+	2.4. Docker Compose ако ще е разделено в микро сървиси(контейнери).
+В него са описани, необходимите имиджи и тяхната зависимост,
+групирани под 1 приложение. Стартирайки приложението DockerCompose,
+знае че трябва да стартира този набор от имиджи, да създаде техните контейнери,
+да направи връзката която сме описали в него и те да заработят и да започнат да си
+говорят.
+	2.5. Изпълняваме контейнера.
+
+	(2.1)		(2.2)			  (2.3)			(2.4)				(2.5)
+[JavaCode] -> [DockerFile/s] -> [Images] -> [DockerCompose] ->[docker run/ Docker-compose up]
+
+******************************************************************
+Docker CLI -> позволява ни да работим с Doker engine(сървърната част на докера)
+Да build-ваме image-и, да стартираме контейнери и тн.
+
+docker run: Creates and runs a new container based on a specified image.
+
+Example: docker run image_name starts a container based on the specified image.
+docker pull: Downloads an image from a container registry.
+
+Example: docker pull image_name fetches the specified image from the registry.
+docker build: Builds a Docker image from a Dockerfile.
+
+Example: docker build -t image_name . builds an image using the Dockerfile in the current directory and assigns it a tag (-t).
+docker images: Lists available Docker images.
+
+Example: docker images displays a list of images on your local machine.
+docker ps: Lists running containers.
+
+Example: docker ps shows the running containers along with their details.
+docker stop: Stops a running container.
+
+Example: docker stop container_id stops the container with the specified ID.
+docker rm: Removes a container.
+
+Example: docker rm container_id deletes the container with the specified ID.
+docker rmi: Removes an image.
+
+Example: docker rmi image_name deletes the specified image from your local machine.
+docker exec: Runs a command inside a running container.
+
+Example: docker exec container_id command executes the specified command within the running container.
+docker logs: Fetches the logs of a container.
+
+Example: docker logs container_id displays the logs generated by the specified container.
+docker inspect: Provides detailed information about a container or image.
+
+Example: docker inspect container_id retrieves detailed information about the specified container.
+docker network: Manages Docker networks.
+
+Example: docker network create network_name creates a new Docker network.
+docker volume: Manages Docker volumes.
+
+Example: docker volume create volume_name creates a new Docker volume.
+docker-compose: Manages multi-container Docker applications using a Compose file.
+
+Example: docker-compose up starts the containers defined in the docker-compose.yml file.
+
+
+************************* Docker Compose ****************************************************
+The Docker Compose file has the following structure:
+
+Version:
+
+The version of the Docker Compose file syntax being used.
+It is specified at the top of the file to indicate which 
+version of the Compose file format you are using.
+
+version: '3.8'
+--------------------------
+Services:
+
+The services section is where you define the different containers that 
+make up your application. 
+Each service represents a separate container and can have its own configuration
+ options such as image, environment variables, ports, volumes, etc.
+
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - 80:80
+  db:
+    image: mysql:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+------------------------------
+Networks:
+
+The networks section allows you to define custom networks that your services can connect to.
+This is useful for specifying network connectivity and
+communication between containers.
+
+networks:
+  mynetwork:
+    driver: bridge
+services:
+  web:
+    networks:
+      - mynetwork
+  db:
+    networks:
+      - mynetwork
+
+--------------------------------------------------
+Volumes: 
+
+The volumes section allows you to specify named volumes or bind mounts for persisting data or
+sharing files between containers and the host machine. 
+
+volumes:
+  data:
+    driver: local
+services:
+  db:
+    volumes:
+      - data:/var/lib/mysql
+
+---------------------------------------------
+Other Configurations: 
+
+In addition to the above sections, the Docker Compose file supports various other configurations,
+such as environment variables, command overrides, restart policies, resource limits, and more.
+These configurations can be defined at the service level or globally.
+
+services:
+  web:
+    environment:
+      - DEBUG=true
+    restart: always
+
+************************************************************
+Всеки Image има файлова нива на файловите системи които са read-only и са isoladed(изолирани).
+когато имаме image не можем да правим нищо по файловата система, когато обаче
+той се рънне като контейнер, ние можем да правим локални промени върху него и да записваме информация.
+
+--------------------------------------------
+Какво е volume в докер? - Дисково пространство което се 
+маунтва към докер файловата система и може да се използва за
+складиране или четене на информация.
+Информацията може да се споделя с всички контейнери и е независима от тях.
+
+********* Docker commands ********************
+docker run -p 5000:80 -d -v C:\users:/[dockerDirectoryName-createsItIfNotExist] [containerName]
+docker volume COMMAND -> опциите за волюм.
+docker volume create myvolume
+docker volume ls
+docker volume inspect myvolume
+docker run -p 5000:80 -d -v myvolume:/[dockerDirectoryName-createsItIfNotExist] [containerName]
+
+Image Management:
+
+docker images: List available Docker images.
+Options: -a/--all shows all images (including intermediate images),
+ -q only displays the image IDs.
+docker pull <image_name>: Download an image from a container registry.
+docker build: Build a Docker image from a Dockerfile.
+Options: -t/--tag assign a tag to the image, -f/--file specify the Dockerfile path.
+Container Management:
+
+docker run <image_name>: Create and start a new container based on an image.
+Options: -d/--detach run the container in the background, -p/--publish map container ports to host, -v/--volume mount volumes, -e/--env set environment variables.
+docker start <container_name/id>: Start one or more stopped containers.
+docker stop <container_name/id>: Stop one or more running containers.
+docker restart <container_name/id>: Restart a running container.
+docker rm <container_name/id>: Remove one or more containers.
+Options: -f/--force forcefully remove a running container.
+docker ps: List running containers.
+Options: -a/--all shows all containers (including stopped ones), -q only displays the container IDs.
+Container Logs and Executions:
+
+docker logs <container_name/id>: Fetch the logs of a container.
+Options: -f/--follow stream the logs in real-time.
+docker exec <container_name/id> <command>: Run a command inside a running container.
+Options: -it to open an interactive session (e.g., bash).
+Network and Volume Management:
+
+docker network ls: List Docker networks.
+docker network create <network_name>: Create a new Docker network.
+docker volume ls: List Docker volumes.
+docker volume create <volume_name>: Create a new Docker volume.
+Image and Container Cleanup:
+
+docker rmi <image_name/id>: Remove one or more images.
+Options: -f/--force forcefully remove the image.
+docker system prune: Remove unused containers, networks, and volumes.
+Options: -a/--all remove all unused images as well.
+
+--------------- Options ------------------------------
+-d, --detach: Run a container in the background (detached mode).
+
+Example: docker run -d <image_name>
+The -p option takes two arguments: <host_port>:<container_port>. Here's how it works:
+
+<host_port>: This represents the port number on the host machine.
+It can be any available port on the host system that you want to map to the container.
+
+<container_port>: This represents the port number exposed by the container.
+It is the port that the application inside the container is listening on.
+
+Example: docker run -p <host_port>:<container_port> <image_name>
+-v, --volume: Mount a volume or directory from the host into the container.
+
+Example: docker run -v <host_path>:<container_path> <image_name>
+-e, --env: Set environment variables for the container.
+
+Example: docker run -e <key>=<value> <image_name>
+-it: Start an interactive session with a container (allocate a pseudo-TTY).
+
+Example: docker run -it <image_name> <command>
+--name: Assign a name to a container.
+
+Example: docker run --name <container_name> <image_name>
+-rm: Automatically remove the container when it exits.
+
+Example: docker run --rm <image_name>
+-l, --label: Add metadata labels to a container.
+
+Example: docker run -l <key>=<value> <image_name>
+-u, --user: Set the username or UID for a container process.
+
+Example: docker run -u <username/UID> <image_name>
+-v, --version: Show the Docker version information.
+
+Example: docker --version
+-h, --help: Show help information for Docker commands.
+
+The -w option in Docker sets the working directory inside the container when running a command.
+It specifies the directory where the command should be executed within the container.
+
+The -w option is commonly used with the docker run or docker exec
+commands to define the working directory for the command being executed.
+
+*docker run -w /app my-image npm install*
+*docker exec -w /app my-container npm run start*
+
+In this example, the docker run command is used to start a container
+based on the my-image image. 
+The -w option is set to /app, which specifies that the command npm install
+should be executed within the /app directory inside the container.
+
+In this example, the docker exec command is used to run the 
+command npm run start within the running container named my-container. 
+The -w option sets the working directory to /app before executing the command.
+
+By using the -w option, you can ensure that commands executed inside the container 
+are executed in the correct working directory,
+providing a more predictable and organized environment for running containerized applications.
+
+
+Example: docker --help or docker <command> --help
+
+-----------------------------------------------------------
+
+docker run -it -p 8080:8080 -v ${PWD}:/app -w /app node:16 npm run dev
+->it се закача към контейнера и по този начин -w изпълнява командата вътре в контейнера
+и ни връща резултат.
+
+docker pull mongo -> дава ни най-последната версия на image-a.
+docker pull mongo:4.4.21 -> дава ни определена версия на image-a.
+
+Конфигуриране на база данни в даден докер имидж:
+docker run / - '/' в линукс е нов ред, 
+-p 27017:27017 / - <host_port>:<container_port>
+-d / - detached (изпълни контейнера в background mode)
+-e MONGO_INITDB_ROOT_USERNAME=mongoadmin / - създаваме системна променлива
+-e MONGO_INITDB_ROOT_PASSWORD=password / - създаваме системна променлива
+mongo:4.4.21 ->името на имиджа в който ще се инсталира.
+
+***************Docker Compose ********************************
+1. DockerFile -> всички команди, необходими за стартирането на 1 приложение:
+Докер файл-а е начина по който създаваме нашите имиджи.
+Можем да ги вземем от Докер Хъб, но ако искаме нещо специфично, можем да си създадем такъв файл.
+Докер файл-а съдържа инструкции, които ние пишем.
+
+*** създава се с docker build командата ***
+
+1.Копиране на вече готов докер файл от интернет:
+docker build -f {пълния url}
+
+DokerFile клаузи:
+Започваме с FROM клауза, което показва на какво ще базираме имиджа.
+1.FROM -> някакъв имидж на който се базираме.
+	можем да имаме много FROM клаузи и така да създадем 'multistage build'
+	------------------------
+	FROM .../java/java:17 AS base
+	...
+	FROM .../java/jdk:17 AS build
+	...
+	FROM build AS publish
+	....
+	FROM base AS final
+	...
+	------------------------
+	
+2.LABEL -> мета данни, които добавяме към имиджа.
+	Като обикновено е автора на имиджа, или някакви контакти и тн.
+	Той се състои от key-value стойности.
+	-------------------------
+	LABEL <key>=<value> <key>=<value>
+	-------------------------
+
+3.RUN -> когато искаме да изпълним някаква команда.
+	Тази команда е все едно влизаме на терминала и я изпълняваме.
+	---------------------
+	npm install
+	---------------------
+
+4.COPY -> копира файлове в нашия имидж.
+	От файловата система, към сорс кода(имиджа).
+	Тези файлове след това ще бъдат достъпни в контейнера.
+
+5.ADD -> подобна е на COPY.
+	Можем да кажем, че искаме директно да свалим файл от интернет и да го копираме
+	на нашия имидж(Не е нужно да е на файловата система).
+	Можем също да дадем архив и да кажем че искаме да го копираме на на имиджа,
+	обаче няма да се копира, а ще се разархивира, докато при COPY, 
+	като кажем името на архива, той директно го копира на файловата система на имиджа.
+
+	COPY <source> <destination>
+
+	# Копиране на един файл от локалната файлова система в образа
+	COPY app.jar /app/
+
+	# Копиране на цяла директория от локалната файлова система в образа
+	COPY src/ /app/src/
+
+	# Копиране на множество файлове, използвайки wildcards
+	COPY *.txt /data/
+
+	# Копиране на файл от контекста на сборката в образа
+	COPY ./config.ini /app/
+
+	<source> представлява източника, който искате да копирате вътре в образа. 
+	Това може да бъде файл, директория или wildcards (например * или ?) 
+	за множество файлове или директории. Ако използвате локална файлова система,
+	източникът се указва относително на местоположението на Dockerfile.
+
+	<destination> представлява местоположението в образа, 
+	където искате да копирате източника. Това може да бъде 
+	абсолютен път вътре в образа или относителен път спрямо текущата 
+	работна директория на образа.
+
+	Копиране на множество файлове, използвайки разделени пространства и имена на файлове:
+	COPY file1.txt file2.txt /destination/
+
+	Копиране на множество файлове с използване на wildcards (например *):
+	COPY *.txt /destination/
+
+	Копиране на цяла директория с използване на точка (".") в качеството на източник:
+	COPY ./source/. /destination/
+
+6.ENTRYPOINT -> обикновено е най-долу на докер файла,
+	след като сме изпълнили вече всички стъпки за създаването на имиджа.
+	Показваме му как да стартира:
+	Ако имаме база данни, казваме командата за базата и пътя в който се намира.
+	В момента в който стартираме нашият контейнер, то заработва директно.
+
+7.Командата "WORKDIR" в Docker се използва за задаване на работната директория
+(working directory) вътре в контейнера. Това е директорията, 
+в която всички последващи инструкции в Dockerfile, 
+които работят с файлове и директории, ще се изпълняват.
+
+Когато се използва командата "WORKDIR", тя променя текущата работна директория 
+в контейнера на указаната директория. Това означава, 
+че всички последващи инструкции, които оперират с файлове 
+(например COPY, RUN, ADD и други), 
+ще се изпълняват в контекста на тази зададена директория.
+
+8.EXPOSE -> Когато искаме при стартиране на контейнера, той да може да получава заявки
+
+9.ENV -> системни променливи с които стартираме нашият контейнер.
+Отново се използват key-value стойности.
+
+10.VOLUME -> казваме какъв диск да използва контейнера.
+Може да е диск, създаден от докер. Може да бъде и път до наша директория,
+която ще я вземем и споделим с нашият имидж и при стартирането на контейнера,
+той ще започне да записва информацията си там.
+
+11.CMD -> изпълняваме команда в командния ред.
+
+12. RUN vs CMD vs ENTRYPOINT:
+RUN ->когато искаме да изпълним команда на контейнер операционната система,
+по време на билдване на имиджа.
+Обикновено се изпълнява за инсталиране на пакети и тн ( нещата които бихме инсталирали
+на ОС-а за да я подготвим за работа). 
+Можем да изпълняваме множество команди,но ако всяка команда е една под друга,
+ще се създадат различни слоеве за всяка команда, което отнема повече място.
+Затова е добра идея да се комбинират в една команда или по-малко като брой.
+
+CMD -> дефинираме команда, която да се изпълни при стартирането на контейнера.
+може да бъде презаписана през терминала после.
+Обикновено я използваме когато искаме да стартираме контейнера по определен начин,
+ако не сме му подали някакви специфични параметри.
+
+ENTRYPOINT -> дефинираме каква да е командата с която ВИНАГИ да бъде стартиран контейнера.
+тя винаги се стартира при пускането на контейнера и не трябва да се презаписва.
+Може да се презапише, но щом е в ENTRYPOINT като правило е че авторите не 
+искат тя да бъде презаписана.
+Те са казали, че когато стартира контейнера, тя трябва да стартира точно с тази
+команда.
+
+
+--------------------- Custom Image ------------------------
+CMD:
+docker run -it node:16 bash -> стартираме чисто нов контейнер базиран на нод16.
+mkdir /app
+cd /app
+du - hs . -> дава инфо за паметта в дадената локация.
+docker cp .(всичко в директорията) sweet_moser(името на контейнера):/app/
+npm run dev & -> стартираме сървъра в бекграунда
+curl localhost:8080 -v -> дава ни повече инфо за това дали локално можем да 
+достъпим сайта.
+
+
+
+
+
+
+
+DockerFile:
+-------------------------------------------
+FROM node:16
+
+WORKDIR /app
+
+COPY .. -> копирай от директорията в която се намира докер файла във /app, която е дефолтна директория.
+
+RUN npm install -> тегли и инсталира депендансита, необходими за самото приложение
+
+EXPOSE 8080/tcp
+
+CMD ["npm","run","dev"]
+ENTRYPOINT npm run dev
+
+-----------------
+отиваме в директорията на докер файла:
+
+docker build -t mywebsite .(в тази директория търси докер файл-а)
+
+docker run -d -p 8080:8080 mywebsite -> стартираме приложението за дадения порт.
+docker rm [id] -f -> махаме горния контейнер.
+
+
+рънваме отново докер файла с новия ред EXPOSE 8080/tcp
+docker run -P -d mywebsite:1.0 -> всички портове които са експознати в имиджа,
+ще бъдат свързани към рандъм порт.
+
+--------------
+Docker Hub:
+- Log in:
+docker login -> username/password
+- publish image:
+docker push {username}/{app}
+
+
+------------------------------
+
+docker build: Създава Docker образ от Dockerfile.
+
+-t, --tag: Задава таг (име и версия) на образа.
+-f, --file: Указва път до Dockerfile.
+docker run: Стартира нов контейнер от образ.
+
+-d, --detach: Пуска контейнера във фонов режим (detach mode).
+-p, --publish: Публикува портове от контейнера на хост системата.
+-v, --volume: Монтира директория от хост системата в контейнера.
+docker pull: Изтегля Docker образ от регистъра (репозитория).
+
+-a, --all-tags: Изтегля всички версии (тагове) на образа.
+docker push: Качва Docker образ в регистъра (репозитория).
+
+docker images: Извежда списък със запазени Docker образи.
+
+-a, --all: Показва всички образи, включително и промежуточните.
+docker ps: Извежда списък с работещи контейнери.
+
+-a, --all: Показва всички контейнери, включително и неактивните.
+-q, --quiet: Извежда само идентификаторите на контейнерите.
+docker exec: Изпълнява команда в работещ контейнер.
+
+-it, --interactive --tty: Активира интерактивен режим за взаимодействие с командния ред на контейнера.
+docker stop: Спира работещ контейнер.
+
+-t, --time: Задава време за изчакване преди принудително спиране на контейнера.
+docker rm: Премахва контейнер.
+
+-f, --force: Принудително премахва контейнера дори ако е работещ.
+docker rmi: Премахва Docker образ.
+
+-f, --force: Принудително премахва образа дори ако е свързан с контейнери.
+
+*************************Container Networking*************************************
+
+Как контейнерите могат да комуникират помежду си?
+За да изключим варианта да достъпваме контейнерите по ИП,
+използваме HostName.
+-Docker Network - създаваме специална споделена мрежа и контейнерите
+ни могат да участват в нея.
+-Docker Compose - когато говорим за сървиси и тяхното по-лесно
+управление. 
+По подразбиране DockerCompose създава такава мрежа, която е споделена
+м/у контейнерите и те вече могат да си говорят.
+Един контейнер може да участва в няколко мрежи.
+
+Какъв тип могат да бъдат мрежите?
+Default: Bridge -> контейнерите които живеят на хоста ще могат да си говорят.
+Ако имаме отдалечена система, те няма да могат да си говорят.
+
+Overlay -> свързват докер демоните/енджините на няколко системи в 1 обща мрежа
+която се казва Overlay мрежа. 
+По този начин контейнерите им могат да си говорят помежду си.
+
+Как да създадем в Докер като изпълним приложение + База данни:
+****Run App + Database Containers****
+
+1. Създаваме мрежа:
+docker network create my_network
+docker network ls -> списък с всички мрежи.
+docker network inspect {network_name}-> info;
+
+Пример:
+-----------------------------
+ДБ контейнер:
+docker run -dit \ 
+--name wordpress_db \
+-e MYSQL_ROOT_PASSWORD=pass \ 
+-e MYSQL_DATABASE=wordpressdb \ 
+-e MYSQL_USER=wordpress \ 
+-e MYSQL_PASSWORD=wordpress \ 
+--expose 3306 \ 
+--expose 33060 \ 
+--network my_network \ 
+-v ${PWD}/data:/var/lib/mysql \ 
+mysql
+-----------------------------
+Wordpress контейнер:
+docker run -dit \ 
+--name wordpress-website \
+-e WORDPRESS_DB_HOST=wordpress_db \ 
+-e WORDPRESS_DB_USER=wordpress \ 
+-e WORDPRESS_DB_PASSWORD=wordpress \ 
+-e WORDPRESS_DB_NAME=wordpressdb \
+-v ${PWD}/wp-data:var/www/html \ 
+-p 80:80 \ 
+--network my_network \ 
+wordpress
+----------------------------- 
+
+
+**************** Orchestration / Оркестрация *************************
+Какво е Оркестрация? - управлението на целия жизнен цикъл на контейнера.
+Автоматизира deploy-ментите, управление, скейлинг, networking.
+
+Целият жизнен цикъл за сваляне, вдигане на контейнери, управляване на мрежи
+и всякакъв вид управление на много услуги, за това се грижи оркестрациятата/оркестраторът.
+
+Пример за оркестратор е Kubernetess.
+
+DockerCompose също е уред/tool/ за оркестрация на контейнери.
+-управлява живота на цялата услуга.
+-стартира,спира и ре-билд-ва услуги/services -> контейнери;
+-можем да видим статуса на всички услуги/контейнери.
+-с 1 команда можем да стартираме нашето приложение.
+
+Docker-Compose.yaml:
+-Описваме контейнерите, които ще бъдат стартирани.
+-Мрежите в които тези сървиси ще участват;
+
+-------------------------------
+docker-compose:
+version: "{version number}"
+services:
+	db:
+		image: mysql:latest
+		...
+		networks:
+			-backend network
+	app:
+		build:app
+		...
+		networks:
+			-backend network
+			-frontend network
+	web:
+		build:web
+		...
+		networks:
+			-frontend network
+networks:
+	-backend network
+	-frontend network
+	
+------------------------------
+Подобно е на docker run командата.
+При него работим вече със създадени имиджи;
+Complete docker-compose file:
+
+version:"{version}"
+
+services:
+	wordpress_db:
+	image:mysql:latest
+	command:'--default-authentication-plugin=mysql_native_password'
+	volumes:
+		-db_data:/var/lib/mysql
+	restart: always
+	environment:
+		-MYSQL_ROOT_PASSWORD=somewordpress
+		-MYSQL_DATABASE=wordpress
+		-MYSQL_USER=wordpress
+		-MYSQL_PASSWORD=wordpress
+	expose:
+		-3306
+		-33060
+	wordpress_site:
+	image: wordpress:latest
+	volumes:
+		-wp_data:/var/www/html -> къде да бъде намапнато вътре в контейнера.
+	ports:
+		-80:80
+	restart: always
+	environment:
+		-WORDPRESS_DB_HOST=wordpress_db
+		-WORDPRESS_DB_USER=wordpress
+		-WORDPRESS_DB_PASSWORD=wordpress
+		-WORDPRESS_DB_NAME=wordpressdb
+	volumes:
+		db_data:
+		wp_data:
+networks: -> ако искаме компоуз файла да създаде мрежата
+	my_network:
+		
+---------------------------------
+стартираме с docker-compose up,
+той изпълнява docker-compose build + docker-compose start
+
+silent mode: docker-compose up -d -> detached mode,
+контейнерите си работят на заден план и не виждаме техните логове,
+ако искаме да проверим лог - docker logs {името на контейнера}
+
+за да проверим дали сървисите ни са горе - docker-compose ps
+
+можем да използваме docker-compose за няколко файла:
+docker-compose -f docker-compose.yml -f production.yml up -d
+
+Redeploy a single service:
+docker-compose build web
+docker-compose up --no-deps -d web
+
+Remove everything(images,volumes,networks, etc)
+docker-compose down --rmi all --volumes
+
+************* Kubernetess *********************
+
+Софтуер с отворен код за оркестриране на контейнери.
+Когато работим с кубернетис, получаваме достъп до АПИ,
+което ни позволява да работим с какъвто и да е било доставчик
+на клауд услуги(където и да са инсталирани нашите контейнери,
+няма да има значение).
+
+Кубернетис е система съставена от 1 или повече хостове,
+които изпълняват нашите контейнери, те работят в клъстър и могат
+да говорят помежду си.
+
+Кубернерис автоматизира deployment, scaling, management of containerized apps.
+
+По hostName и port, създава обща мрежа по която могат да си комуникират нашите приложения.
+Независимо че са на 2 отделни хоста.
+
+**************** ОБОБЩЕНИЕ **************************
+1.Dockerfile -> съдържа всички команди за изграждане на Image.
+2.Container Networking -> позволява комуникацията м/у контейнерите в Docker.
+Когато имаме мрежа, споделена м/у контейнерите, те могат да си говорят
+на база {container_name}, който сме описали.
+При използване на обща мрежа, позволяваме сървисите да се намират помежду си.
+3.Container orchestration -> автоматично управление на контейнери
+в средата ни.
+4.DockerCompose -> позволява множество контейнери да ги направим като 1 приложение,
+и да ги свържем помежду им.
+
+*********** DockerFile&DockerCompose ******************
+# Коментари и директиви за базовия образ
+FROM base_image
+
+# Инструкции за подготовка на образа
+RUN command1
+RUN command2
+
+# Копиране на файлове и директории в образа
+COPY source destination
+
+# Задаване на работна директория
+WORKDIR /path/to/directory
+
+# Определяне на променливи на средата
+ENV variable=value
+
+# Изпълнение на команда по време на стартиране на контейнера
+CMD command
+
+# Изложение на портове
+EXPOSE port
+
+# Инструкции за стартиране на контейнера
+ENTRYPOINT command
+-------------------------------------------------
+FROM: Определя базовия образ, от който да се създаде новият образ.
+ Това е първата инструкция в Dockerfile и трябва да се появи само веднъж.
+
+RUN: Изпълнява команди във виртуалната машина на Docker по време на създаването на образа.
+Обикновено се използва за инсталиране на пакети, изтегляне на зависимости или изпълнение на скриптове.
+
+COPY и ADD: Копират файлове и директории от локалната файлова система на хоста в образа.
+COPY просто копира файловете, докато ADD може да се използва за копиране на файлове
+и разархивиране на URL адреси.
+
+WORKDIR: Задава работната директория за всички последващи инструкции в Dockerfile.
+Командите RUN, COPY, ADD и други, които използват пътища, 
+ще работят относително спрямо тази директория.
+
+ENV: Задава променливи на средата в контейнера. 
+Могат да бъдат използвани по време на създаван
+------------------------------------------------------------
+

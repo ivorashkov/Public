@@ -1,0 +1,111 @@
+- name: Full Ansible Playbook Example
+  hosts: all
+  become: true
+
+  vars:
+    my_var: "example_value"
+
+  tasks:
+    - name: Copy a file
+      copy:
+        src: /local/path
+        dest: /remote/path
+
+    - name: Install a package
+      apt:
+        name: nginx
+        state: present
+
+    - name: Manage a service
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Execute a shell command
+      shell: echo "Hello, World!"
+
+    - name: Create a user
+      user:
+        name: ansible_user
+        state: present
+        shell: /bin/bash
+
+    - name: Manage files
+      file:
+        path: /remote/path
+        state: directory
+        mode: '0755'
+
+    - name: Set permissions
+      acl:
+        path: /remote/path
+        state: present
+        owner: user
+        permissions:
+          - user: user:rw
+
+    - name: Manage cron jobs
+      cron:
+        name: "Backup job"
+        minute: "0"
+        hour: "3"
+        job: "/usr/bin/backup"
+
+    - name: Install pip package
+      pip:
+        name: requests
+        virtualenv: /path/to/venv
+
+    - name: Create a template file
+      template:
+        src: template.j2
+        dest: /etc/config.conf
+
+    - name: Manage docker containers
+      docker_container:
+        name: my_container
+        image: nginx:latest
+        state: started
+
+    - name: Manage Kubernetes resources
+      k8s:
+        state: present
+        definition: "{{ lookup('file', 'my-deployment.yaml') }}"
+
+    - name: Clone a git repository
+      git:
+        repo: https://github.com/example/repo.git
+        dest: /path/to/destination
+
+    - name: Manage AWS S3 bucket
+      aws_s3:
+        bucket: my_bucket
+        mode: create
+
+    - name: Manage firewall rules
+      ufw:
+        rule: allow
+        port: 22
+        proto: tcp
+
+    - name: Encrypt a file with vault
+      ansible.builtin.debug:
+        msg: "Vault-encrypted file applied successfully."
+
+    - name: Set variables dynamically
+      set_fact:
+        dynamic_var: "dynamic_value"
+
+    - name: Fetch file from remote host
+      fetch:
+        src: /remote/path
+        dest: /local/path
+
+    - name: Pause playbook execution
+      pause:
+        seconds: 10
+
+    - name: Reboot a server
+      reboot:
+        reboot_timeout: 300

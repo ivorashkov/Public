@@ -1,0 +1,46 @@
+1.BaseEntity:
+	id;
+
+2.BaseUser extends BaseEntity;
+	userName;
+	password;
+
+3.AdminUser extends BaseUser;
+	firstName; -> nullable
+	lastName; -> nullable
+	
+	Set<UsersForApproval>
+
+4.RegularUser extends BaseUser:
+	firstName; -> notNull;
+	lastName; -> notNull;
+	phoneNumber; -> notNull;
+	idCardPictureFront; -> notNull
+	idCardPictureBack; -> notNull
+	selfiePictureForApproval; -> notNull;
+	
+	
+
+	@OneToMany
+	List/Set<TravelOffer> addedOffers;
+
+5.TravelOffer extends BaseEntity
+	Country;
+	Destination;
+	HotelName;
+	Stars;
+	TravelOfferTime;
+	Transport;
+	Money;
+	Discounts;
+	Description;
+	
+	
+
+UsersForApproval extends RegularUser
+
+или е по-добре да има само users при които има boolean в който се вижда дали е админ или не е, вместо да се отделя
+в отделна таблица.
+
+друга идея е да се пълни таблица отделна и от сорта на users_for_approval и след удобрение да се мести 
+при users или това не е оферта??

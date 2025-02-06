@@ -1,0 +1,468 @@
+DockerFile & DockerCompose
+
+1. Create image with docker run:
+	docker run -d /
+	-p 80:8080 /
+	--name ls-server lightstreamer:latest
+
+2.Create image with docker run:
+	docker run -d /
+	-e NODE_ENV=development /
+	--name ghost-container /
+	-p 3001:2368 ghost:latest
+
+3.Apache HTTP Server Container
+	docker run -d / 
+	--name my-apache-app /
+	-p 8080:80 /
+	-v .\papkaZaMapvane:/usr/local/apache2/htdocs/ httpd:latest
+	*Каквото имаме в papkaZaMapvane, това ще се чете
+	директно от нея към контейнера.
+
+	-v ./papkaZaMapvane:/usr/local/apache2/htdocs/ httpd:latest
+	*Когато използваме '/' при ./papkaZaMapvane, казваме 
+	на докер да създаде такъв волюм вътре в самия докер.
+
+4.SQL Server Container
+	docker run /
+	-e ACCEPT_EULA=Y /
+	-e MSSQL_SA_PASSWORD=yourStrongPassword12# /
+	-p 1433:1433 /
+	-v sqldata:/var/opt/mysql / ->mount-ваме диск (създаваме диск в докер за информацията която ще се съдържа в пътя)
+	-d mcr.microsoft.com/mssql/server:latest
+
+5. MariaDB Client and Server in a network
+	Available image at https://hub.docker.com/_/mariadb
+	check documentation of the image to see additional info of 
+	how to configure username/pswd for example.
+
+	#network check
+	docker network ls
+
+	#create nw
+	docker network create mariadb_network
+
+	#Server container
+	docker run -d /
+	--name mariadb_server /
+	--network mariadb_network /
+	-e MARIADB_USER=mdbuser /
+	-e MARIADB_PASSWORD=mdbpass /
+	-e MARIADB_ROOT_PASSWORD=rootpass /
+	mariadb:latest
+
+	#check logs
+	docker logs mariadb_server
+
+	#docker ps -a -> see all containers
+
+	#Client
+	docker run -d /
+	--name mariadb_client /
+	--network mariadb_network /
+	-e MARIADB_ROOT_PASSWORD=rootpass /
+	mariadb:latest
+
+	#check network info
+	docker network inspect mariadb_network
+	docker inspect mariadb_network
+
+	#Log into client container
+	docker exec -it mariadb_client bash
+
+	#How to connect to remote container in MariaDB using hostName
+	mariadb -h mariadb_server -u mdbuser -p
+	Enter password: mdbpass
+	
+#Ако създадем контейнери, но не опишем коя мрежа да използват,
+	те ще се закачат за default-ната такава.
+
+6.TaskBoard App:Building a Custom image:
+	#ASP.NET application
+	-------------------------------------------
+	FROM mrc.microsoft.com/dotnet/aspnet:6.0 AS base
+	WORKDIR /app
+	EXPOSE 80
+	EXPOSE 443
+
+	FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+	WORKDIR /src
+	COPY ["Taskboard.WebApp/TaskBoard.WebApp.csproj", "TaskBoard.WebApp/"]
+	COPY ["Taskboard.Data/TaskBoard.Data.csproj", "TaskBoard.Data/"]
+	RUN dotnet restore "TaskBoard.WebApp/TaskBoard.WebApp.csproj"
+	COPY . .
+	WORKDIR "/src/TaskBoard.WebApp"
+	RUN dotnet build "TaskBoard.WebApp.csproj" -c Release -o /app/build
+
+	FROM build as publish
+	RUN dotnet publish "TaskBoard.WebApp.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+	FROM base as final
+	WORKDIR /app
+	COPY --from=publish /app/publish
+	ENTRYPOINT ["dotnet","TaskBoard.WebApp.dll"]
+	-------------------------------------------
+	#Building image from the directory from rood directory where TaskBoard.WebApp and TaskBoard.Data are.
+	docker build -t {dockerHubUsername}/taskboard_app . -f .\TaskBoard.WebApp\DockerFile
+
+	With the -f option, set the path to the Dockerfile;
+
+	With the -t option, set the name of the image in format {your Docker Hub username}/{app name}, 
+	as we will later add our image to Docker Hub
+
+	#Log into Docker Hub
+	docker login
+	username:{username}
+	password:{password}
+
+	#push the image to dockerHub
+	docker push {dockerHubUsername}/taskboard_app
+	
+*****************
+Пример за много команди, които да билднат само 1 ниво в контейнера, защото са сляти в 1 команда:
+RUN apk update / 
+	&& apk add curl /
+	&& apd add telnet /
+	&& .... /
+	&& rm -rf var/cache/apk/*
+	
+apk add --no-cache OR apk add 'followed by' rm -rf var/cache/apk/*
+за да махнем кеша, който после няма да ни трябва след като сме инсталирали необходимите неща.
+
+RUN mvn build {image} /
+	&& rm -rf {Maven path}
+
+rm командата трябва да е в същия RUN в който са изпълнени и другите команди.
+
+Също така ако не знаем къде как се записва даден кеш, просто използваме multi-stage 
+dockerFile, като така вземаме само executable файловете.
+
+*****************
+
+7.Tracker App ->run a simple JavaScript front-end app based on Vue.js
+s for keeping track of daily duties in a Docker container.
+
+	---------------------------------------
+	# build stage
+	FROM node:14-alpine as build-stage
+	WORKDIR /vue_app
+	COPY package.json ./
+	RUN npm install
+	COPY . .
+	RUN npm run build
+
+	# production stage
+	FROM nginx as production-stage
+	COPY --from=build-stage /vue_app/dist /usr/share/nginx/html
+	EXPOSE 80
+	CMD ["nginx", "-g", "daemon off;"]
+	---------------------------------------
+	docker build -t tasker_app .
+	docker run -d -p 8080:80 tasker_app
+	docker ps -a
+
+8.TaskBoard App: Connect Containers in a Network
+
+	#create network
+	docker network create taskboard_network
+
+	#list networks
+	docker network ls
+
+	#DataBase setup
+	#Не мапваме порт, защото не искаме да се вързваме през localhost,
+	#А искаме контейнерът по-надолу 'Клиент' да се върже през докер мрежата към тази база.
+
+	docker run /
+	-e ACCEPT_EULA=Y /
+	-e MYSQL_SA_PASSWORD=password /
+	-v sqldata:/var/opt/mysql /
+	--rm network taskboard_network --name sqlserver / #--rm ще изтрие контейнера след като го спрем
+	-d mcr.microsoft.com/mssql/server
+
+	#Билдваме го наново след като сме променили конф файла и сме сетнали да се върже към самия контейнер.
+	docker build -t {dockerHubAcc}/taskboard_app .
+
+	docker run /
+	-p 5000:50 --rm /
+	--name web_app /
+	--network taskboard_network /
+	{dockerHubAcc}/taskboard_app # image-a на който ще се базираме
+
+	# понеже не сме в -d и използваме --rm, това означава че сме закачени за контейнера,
+	# и в момента в който излезем, това приложение ще се изтрие.
+
+9.TODO App -> имаме frontend(React) и backend(NodeJS със DB)
+DB ще е външен image, навързваме 3 контейнера.
+
+cd ./09.TODO-App/
+cat ./backend/Dockerfile
+-------------------------------------
+	FROM node:lts-buster-slim AS development
+
+	# Create app directory
+	WORKDIR /usr/src/app
+
+	COPY package.json /usr/src/app/package.json
+	COPY package-lock.json /usr/src/app/package-lock.json
+	RUN npm ci
+
+	COPY . /usr/src/app
+
+	EXPOSE 3000
+
+	CMD [ "npm", "run", "dev" ]
+
+	FROM development as dev-envs
+	RUN apt-get update && apt-get install -y git
+
+	RUN useradd -s /bin/bash -m vscode && groupadd docker && usermod -aG docker vscode
+
+	# install Docker tools (cli, buildx, compose)
+	COPY --from=gloursdocker/docker / /
+	CMD [ "npm", "run", "dev" ]
+-------------------------------------
+
+cat ./frontend/Dockerfile
+
+---------------------------------------
+	# Create image based on the official Node image from dockerhub
+	FROM node:lts-buster AS development
+
+	# Create app directory
+	WORKDIR /usr/src/app
+
+	# Copy dependency definitions
+	COPY package.json /usr/src/app
+	COPY package-lock.json /usr/src/app
+
+	# Install dependecies
+	#RUN npm set progress=false \
+	#    && npm config set depth 0 \
+	#    && npm i install
+	RUN npm ci
+
+	# Get all the code needed to run the app
+	COPY . /usr/src/app
+
+	# Expose the port the app runs in
+	EXPOSE 3000
+
+	# Serve the app
+	CMD ["npm", "start"]
+
+	RUN apt-get update && apt-get install -y git
+
+	FROM development as dev-envs
+	RUN apt-get update && apt-get install -y git
+
+	RUN useradd -s /bin/bash -m vscode && groupadd docker && usermod -aG docker vscode
+
+	# install Docker tools (cli, buildx, compose)
+	COPY --from=gloursdocker/docker / /
+	CMD [ "npm", "start" ]
+-----------------------------------
+	#frontend location
+	docker build -t frontend .
+
+	#network check
+	docker network ls
+
+	#create networks for fe-be & be-db
+	docker network create react-express
+	docker network create express-mongo
+
+	#start mongo
+	cd ./09.TODO-App
+
+	#create DB container
+	#маунтваме директория на компа, а не на докер, затова ползваме \ при '.\data:'
+	docker run -d -v .\data:/data/db --network express-mongo mongo:latest {imageName}
+
+	#търсим кой порт е посочен
+	cat ./frontend/Dockerfile -> EXPOSE 3000
+
+	#create frontend container
+	docker run -d --name frontend --network react-express -p 3000:3000 frontend {imageName}
+
+	#create backend container
+	docker run -d --name backend --network react-express backend {imageName}
+
+	#check existing containers
+	docker ps -a
+
+	#connecting backend container to 2nd existing network
+	docker network connect express-mongo backend
+
+	#check which containers are using the networks
+	docker network inspect express-mongo
+	docker network inspect react-express
+
+11.Blue VS Green App
+voting_app(python)->redis(db)->worker(.net)->postgres(db)->result_app(nodejs)
+
+	cd ./11.Blue-VS-Green-App/
+
+	Dockerfile of result:
+---------------------------------------
+	FROM node:10-slim
+
+	# Add Tini for proper init of signals
+	ENV TINI_VERSION v0.19.0
+	ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+	RUN chmod +x /tini
+
+	WORKDIR /app
+
+	# have nodemon available for local dev use (file watching)
+	RUN npm install -g nodemon
+
+	COPY result/package*.json ./
+
+	RUN npm ci \
+	 && npm cache clean --force \
+	 && mv /app/node_modules /node_modules
+
+	COPY result/. .
+
+	ENV PORT 80
+
+	EXPOSE 80
+
+	CMD ["/tini", "--", "node", "server.js"]
+
+-----------------------------------------------------
+
+	cd ./result
+	docker build -t result .
+
+	#worker Dockerfile
+	cd ./worker
+
+-----------------------------------------------
+	FROM mcr.microsoft.com/dotnet/core/sdk:3.1 as builder
+
+	# Create a working directory
+	WORKDIR /builder
+
+	# Copy the .csproj file and restore
+	#Copy Worker.csproj in /builder directory
+	COPY worker/src/Worker/Worker.csproj .
+	RUN dotnet restore
+
+	# Copy source files to the image
+	COPY worker/src/Worker/ .
+
+	# Build the project
+	RUN dotnet publis -c release -o /out Worker.csproj
+
+	# Specify app image
+	FROM mrc.microsoft.com/dotner/aspnet:3.1
+
+	# Specify working directory for this stage
+	WORKDIR /app
+
+	# Tell Docker what command to run when our image is executed inside a container
+	ENTRYPOINT dotnet Worker.dll
+
+	# Copy the /out directory from the build stage into the runtime image
+	COPY --from=builder /out .
+
+------------------------------------------------
+
+	#build image
+	docker build -t worker .
+
+	cd vote
+
+	#DockerFile vote
+-------------------------------------------------
+	# Using official python runtime base image
+	FROM python
+
+	# Set the application directory
+	WORKDIR /app
+
+	# Install our requirements.txt
+	RUN pip install Flask Redis guncorn --no-cache-dir
+
+	# Copy our code from the current folder to /app inside the container
+	COPY vote/. .
+
+	# Make port 80 available for links and/or publish
+	EXPOSE 80
+
+	# Define our command to be run when launching the container
+	ENTRYPOINT python app.py
+--------------------------------------------
+	docker build -t vote .
+
+#Build those 3 images with Docker-compose
+
+-------------------------------------------
+version: '3.8'
+services:
+	vote:
+		container_name: vote
+		build:
+			dockerfile: ./vote/Dockerfile
+		ports:
+			- "5000:80"
+		restart: on-failure
+		networks:
+			- frontend
+			- backend
+			
+	result:
+		container_name: result
+		build:
+			dockerfile: ./result/Dockerfile
+		ports:
+			- "5001:80"
+		restart: on-failure
+		networks:
+			- frontend
+			- backend
+			
+	worker:
+		container_name: worker
+		build:
+			dockerfile: ./worker/Dockerfile
+		restart: on-failure
+		networks:
+			- backend
+			
+	redis:
+		container_name: redis
+		image: redis
+		networks:
+			- backend
+			
+	db:
+		container_name: db
+		image: postgres
+		networks:
+			- backend
+		environment:
+			-POSTGRES_PASSWORD=postgres
+			-POSTGRES_PASSWORD=postgres
+		volumes:
+			#createdVolume:whereShouldBeMounted
+			-pgdata:/var/lib/postgresql/data/
+			
+volumes:
+	pgdata:
+networks:
+	frontend:
+	backend:
+---------------------------------------
+	docker-compose build
+	docker-compose up -d 
+	docker ps -a
+	docker logs result -f
+	docker logs postgres -f
+	docker ps -a
+	docker logs worker -f 
+	docker-compose down --volumes
+	docker-compose up # without -d за да четем логовете в реално време на всичко
+	

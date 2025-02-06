@@ -1,0 +1,28 @@
+// Tomcat server running on port 8091
+// localhost:8091
+
+// Home Controller -> /api/home
+  End-points:
+    /offers -> http://localhost:8091/api/home/offers
+      full url options:
+         <int page> -> default "0"
+         <int size> -> default "40"
+         <str country> -> required "false"
+         <str city> -> required "false"
+         <str sort> -> default "date;desc"
+         localhost:8091/api/home/offers?page=0&pageSize=40&country=Bulgaria&city=Sofia&city;asc
+    /country/list -> http://localhost:8091/api/home/country/list
+    /offer/{id} ->  http://localhost:8091/api/home/offer/{id}
+    /city/list ->  http://localhost:8091/api/home/city/list
+
+// File Controller -> api/file
+  End-points:
+    /upload/all/{userId} -> http://localhost:8091/api/file/upload/all/{userId}
+      full url options:
+        <long userId>
+        <List files>
+        <Long offerId> -> defaultValue "-1"
+
+
+
+

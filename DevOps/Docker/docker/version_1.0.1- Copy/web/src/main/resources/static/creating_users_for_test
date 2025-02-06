@@ -1,0 +1,35 @@
+#Creating DB indexes and DB table fixes
+
+CREATE INDEX country_index ON offers(country);
+CREATE INDEX city_index ON offers(city);
+CREATE INDEX duration_index ON offers(duration_in_days);
+CREATE INDEX stars_index ON offers(stars);
+CREATE INDEX price_index ON offers(price);
+CREATE INDEX discount_index ON offers(discount);
+CREATE INDEX user_id_index ON offers(user_id);
+
+insert into roles (role_name) values('admin'),('user');
+
+insert into users
+(email_address, first_name, last_name, password, phone_number, username, approved_by, role_id)
+values
+    ('ivo94@abv.bg', 'ivo', 'rashkov', '1234213235','0884123456','ivor','1','1'),
+    ('kolo84@abv.bg', 'kolo', 'rashkov', '1234r213a5','0213556','kolor','2','2'),
+    ('deno74@abv.bg', 'deno', 'kolov', '542321322','22222222','denok','1','2');
+
+
+INSERT INTO offices (address, city, country, phone, user_id)
+VALUES ('ulitsa1','Byala','Bulgaria','123456','1'),
+       ('ulitsa2','Ruse','Bulgaria','13678','1'),
+       ('ulitsa3','Sofia','Bulgaria','987743','1');
+
+UPDATE users SET is_active = true WHERE first_name = 'kolo';
+UPDATE users SET is_active = true WHERE first_name = 'deno';
+
+INSERT INTO offers (creation_date, description, discount, duration_in_days,
+                    price, stars, city, country, transport_type,user_id)
+VALUES (NOW(),'Dubai',0,1,100, 1.1, 'Byala','Dubai','airplane',1),
+       (NOW(),'Bulgaria',4,2,200, 2.1, 'Sofia','Bulgaria','ship',1),
+       (NOW(),'Paris',0,3,300, 3.1, 'Paris','France','bus',1),
+       (NOW(),'Lihtenshtain',0,4,400, 4.1, 'Vaduz','Lihtenshtain','airplane',2),
+       (NOW(),'Italy',1,5,500, 5.1, 'Byala','Dubai','airplane',3);

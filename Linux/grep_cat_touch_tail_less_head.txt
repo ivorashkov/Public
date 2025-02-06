@@ -1,0 +1,54 @@
+cat, 
+cat file1 file2 #cat shows contents of file / files
+cat > newFile -> create new file
+cat [filename-whose-contents-is-to-be-copied] > [destination-filename]
+cat -s geeks.txt - Will suppress repeated empty lines in output
+cat file1 >> file2 -> Will append the contents of one file to the end of another file
+tac filename -> Will display content in reverse order 
+cat -E "filename" -> Will highlight the end of line
+$cat *.txt -> Will show the content of all text files present in the folder.
+$cat >> geeks.txt       |Will append the text "The newly added text."
+The newly added text.   | to the end of the file.
+
+----------------------------------------
+vim, ->  text editor 
+:!q -> exit command
+vim filename.txt ->  open a file in vim editor
+i -> insert mode when file opened
+
+--------------------------------------------
+tail, tail [OPTION]... [FILE]...
+ print the last N number of data of the given input.
+Without any option it display only the last 10 lines of the file specified.
+* tail -n 3 state.txt
+* tail -3 state.txt
+* tail +25 state.txt -> start print from row 25
+
+-----------------------
+head, # Outputs file start | head [OPTION]... [FILE]...
+head -n 10 file # Outputs in terminal first 10 file lines
+head -q  file1.txt file2.txt - -q: It is used if more than 1 file is given.
+
+------------------------------------------------
+less, -> less filename -> reading in pages
+
+------------------------------------------------
+touch, touch file_name # Creates a file in current directory.
+The touch command also allows us to update or create a file with 
+a specific time other than the current time.
+touch -d '1 June 2018 11:02' file1
+touch File1_name File2_name File3_name 
+touch -c filename # check if file is already created
+
+---------------------------------------------------------
+grep, 
+grep [options] [pattern] [file(s)]
+
+options:
+-i  : ignore case
+-v  : invert match (show non-matching lines)
+-n  : show line numbers
+-c  : show count of matching lines
+-r  : search recursively through directories
+-e  : specify pattern as an extended regular expression
+-E  : specify pattern as a basic regular expression (default)

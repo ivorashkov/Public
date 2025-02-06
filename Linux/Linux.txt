@@ -1,0 +1,51 @@
+------------------------------------------
+Recursive means that Linux or Unix command works with the contains of directories,
+ and if a directory has subdirectories and files,
+ the command works on those files too (recursively).
+--------------------------------------------------
+date, - Generally, it is used to display the date in different 
+formats and calculate dates over time.
+-----------------------------------------------------
+awk - Awk is a scripting language used for manipulating data and generating reports
+awk options 'selection _criteria {action }' input-file > output-file
+------------------------------------------------------
+sed,
+SED is a powerful text stream editor. 
+Can do insertion, deletion, search and replace(substitution).
+SED command in unix supports regular expression 
+which allows it perform complex pattern matching.
+-----------------------------------------------
+rpm -> RPM stands for Red Hat Package Manager. 
+The tool permits system users and administrators for installing, updating,
+uninstalling, querying, verifying, and managing system software packages
+-------------------------------------
+API ->  application programming interface — a software intermediary
+that allows two applications to talk to each other.
+APIs are an accessible way to extract and share data within and across organizations.
+------------------------
+APT and YUM are popular package management systems created for Debian-based and Red Hat-based Linux distributions,
+------------------------------------------
+/var/logs -> the logs that I've specifically used were not stored in this directory but in a special log 
+subdirectory where the software and the server was installed. So it could be different depending on the
+situation or preferences that the team has.
+
+
+My name is ... and I've been working in Application Management for over 3 years.
+My previous experience is related to ERP Software, Transactions, Debugging, reading logs, reporting and 
+if the issue could be resolved from my side also fixing.
+More specifically I've been working also with certificates, different kind of communication protocols
+testing connectivity, running specific scripts or connecting with different team members from other departments
+to resolve or forward the issue with enough information so they can easily do their job.
+The OSes I've been working on are Windows and Linux based systems, through RDP(remote desctop protocol) or 
+in other cases SSH based interface.
+My technical knowledge is based on my previous experience plus courses that I am participating in 
+during my weekends/free afterwork time such as Java Programming Courses in the past year and a half and soon I will be 
+taking Cloud/Linux/Docker and Containerisation course so I can improve even further.
+
+In conclusion about my self I am proactive learner, I can learn fast, also multitask and 
+also want to become valuable employee that everyone can rely on.
+--------------------
+ps aux | grep 'sth'
+
+du
+

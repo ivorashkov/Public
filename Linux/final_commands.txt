@@ -1,0 +1,376 @@
+cut -d : -f 4 /data/colored-animals.txt | grep yellow | wc -l
+cut -d - -f 2 /data/animals.txt | sort | uniq | wc -l
+find / -user hero -type f | wc -l
+find / -type f -name "*.basic" | wc -l
+find / -type f -name "README" | wc -l
+uname -r
+
+cut -d ' ' -f 6,7 /data/fruits.txt | grep "love bananas" | wc -l
+find / -type f -iname "*readme*" | wc -l
+find / -type f -iname "README.*" | wc -l
+
+wc -c /data/square.sh
+find / -type f -name "*readme*"
+find / -type f -iname "*readme*"
+find / -type f -name "README.*"
+find / -name README.txt.TXT
+cut -d ' ' -f 4 /data/colored-animals.txt | grep yellow | wc -l
+
+********PARTITIONS INFO*************
+lsblk -> see disk and partitions
+ls -al /dev/{иметоНаДяла}* -> ще видим че има същата структура
+
+
+sudo fdisk /dev/{diskName}
+- n -> create partition with 'n'
+- p -> primary
+- add number of the partition
+-> starting from 2048
+-> last sector: +200M
+-> save with 'w'
+
+-----------------------------EXAM PREP --------------------------------------
+
+
+Disks and File Systems - 9 tasks, 13 pts
+•	(T101, 2 pts) VM1: Use the appropriate tool to create a new primary partition using the MBR partitioning scheme on the smaller (2 GB) and empty hard disk drive with size of 800 MB and type set to Linux LVM
+lsblk
+sudo fdisk /dev/sdb
+* n
+* p
+* 1
+* 2048
+* +800M
+* p 
+* t
+* 8e
+* w
+•	(T102, 1 pts) VM1: Create a physical volume on the new partition, created earlier
+sudo dnf install lvm2
+sudo pvcreate /dev/sdb1
+sudo pvscan
+•	(T103, 1 pts) VM1: Create a volume group named vg_exam on the new physical volume 
+sudo vgcreate vg_exam /dev/sdb1
+sudo vgs
+•	(T104, 1 pts) VM1: Create a logical volume named lv_exam on the new volume group (use 100% of the available space in the volume group)
+sudo lvcreate -n lv_exam -l100%FREE vg_exam
+•	(T105, 1 pts) VM1: Create an xfs file system on the lv_exam logical volume
+sudo mkfs.xfs /dev/vg_exam/lv_exam
+•	(T106, 2 pts) VM1: Mount the new file system on the /data/xfs folder and add a record in the /etc/fstab file
+sudo mkdir -p /data/xfs
+sudo blkid /dev/vg_exam/lv_exam -> /dev/vg_exam/lv_exam: UUID="63d76d90-9907-4364-992c-1a8c0f7266b0" TYPE="xfs"
+sudo vi /etc/fstab ->insert  UUID /data/xfs xfs dafaults 0 0
+sudo mount -av
+lsblk
+•	(T107, 2 pts) VM2: Use the appropriate tool to create a new partition using the MBR partitioning scheme on the smaller (2 GB) and empty hard drive with size of 650 MB and type set to Linux Filesystem
+lsblk
+sudo fdisk /dev/sdb
+* n
+* p
+* 1
+* +650M
+* p to check  the type 
+* w
+lsblk
+•	(T108, 1 pts) VM2: Create ext4 file system on the new partition
+sudo mkfs.ext4 /dev/sdb1
+•	(T109, 2 pts) VM2: Mount the new file system on the /data/ext4 folder and add a record in the /etc/fstab file
+sudo mkdir -p /data/ext4
+sudo blkid /dev/sdb1 -> /dev/sdb1: UUID="ddc4d31b-d654-492f-ae89-d1447a22b615" TYPE="ext4" PARTUUID="ba58217f-01"
+sudo vi /etc/fstab
+UUI=.... /data/ext4 ext4 defaults 0 0
+sudo mount -av
+lsblk
+
+
+Directories and Files - 9 tasks, 16 pts
+
+/data
+ └── projects
+     ├── project1
+     │   ├── documents
+     │   └── source
+     └── project2
+         ├── documents
+         └── source
+		 
+•	(T201, 2 pts) VM1: Create series of directories under the path /data/projects with the following structure (refer to the image)
+sudo mkdir -p /data/projects/project{1,2}/{documents,source}
+•	(T202, 1 pts) VM1: In each folder documents from the previous step create a text file named readme.txt that contains the text linux
+echo 'kernel' | sudo tee /data/projects/project{1,2}/documents/readme.txt
+•	(T203, 2 pts) VM1: In each folder source create a file named code.sh that contains just the signature for bash scripts and a single command - pwd	
+echo '#!/bin/bash' | sudo tee /data/projects/project{1,2}/source/code.sh
+echo 'find' | sudo > /data/projects/project{1,2}/source/code.sh
+•	(T204, 2 pts) VM1: Create a file named unique-animals.txt in the folder /data/animals that contains the sorted list in reverse order of the unique animals (just their names) found in the /important/animal-stories.txt file 
+cat /important/animal-stories.txt
+sudo mkdir -p /data/animals
+cut -d - -f 2 /important/animal-stories.txt | sort -r | uniq | sudo tee /data/animals/unique-animals.txt
+•	(T205, 2 pts) VM1: Create a xz compressed archive named important-bak.tar.xz of the /important folder and its content and store it in the /data/archive folder
+sudo mkdir -p /data/archive
+sudo tar -cJvf /data/archive/important-bak.tar.xz /important
+file /data/archive/important-bak.tar.xz
+•	(T206, 2 pts) VM2: Create a text file exam-files.txt (and store it under /data/find folder) that contains the sorted (in ascending order) list of all the places (full path, including the name) where files with exam.lsa name are found
+sudo mkdir -p /data/find
+sudo find / -type f -name exam.lsa | sort | sudo tee /data/find/exam-files.txt
+•	(T207, 1 pts) VM2: Create a new file based on the exam-files.txt with all words (in the file) exam changed to EXAM and store it as exam-files-upper.txt in the same folder (/data/find)
+sed 's/exam/EXAM/g' /data/find/exam-files.txt | sudo tee /data/find/exam-files-upper.txt
+•	(T208, 2 pts) VM2: VM2: Create a copy of the /important/animal-stories.txt file as /data/animals/lions.txt file which contains only lines that contain the lion text no matter the register (size of the letters) or position in a sentence
+sudo mkdir -p /data/animals 
+cat /important/animal-stories.txt
+grep -i lion /important/animal-stories.txt | sudo tee /data/animals/lions.txt
+•	(T209, 2 pts) VM2: VM2: Create a copy of the /important/animal-stories.txt file as /data/animals/colors.txt file which contains only the unique in alphabetic order for all records about tigers
+grep -i dogs /important/animal-stories.txt 
+grep -i dogs /important/animal-stories.txt | cut -d + -f 1 | sort | uniq | sudo tee /data/animals/colors.txt
+
+Users and Permissions - 8 tasks, 12 pts
+•	(T301, 2 pts) VM1: Create a user john with full name John Smith, with some password and auto-created home folder
+sudo useradd -m -c 'John Smith' john
+sudo passwd john -> john123
+•	(T302, 2 pts) VM1: Create a user jane with full name Jane Parker, with some password and auto-created home folder 
+sudo useradd -m -c 'Tracy Parker' tracy
+sudo passwd tracy -> tracy123
+•	(T303, 1 pts) VM1: Create a group named team
+sudo groupadd gurus
+tail /etc/group
+•	(T304, 1 pts) VM1: Make both users, john and jane, part of the team group 
+sudo usermod -aG gurus john
+sudo usermod -aG gurus tracy
+tail /etc/group
+•	(T305, 1 pts) VM1: Make user jane and group team owners of the /data/projects folder and all its sub-folders and files 
+sudo dnf install tree
+tree /data/projects
+sudo chown john:gurus  -R /data/projects/
+•	(T306, 2 pts) VM2: Create a user jim with full name Jim Beam, with some password, auto-created home folder
+sudo useradd -m -c 'Jim Beam' jim
+sudo passwd jim -> jim123
+•	(T307, 2 pts) VM2: Create a group named powerteam with group ID set to 2100
+sudo groupadd -g 2300 powerteam
+tail /etc/group
+•	(T308, 1 pts) VM2: Make the user jim part of the powerteam group 
+sudo usermod -aG powerteam jim
+
+
+Software and Services - 7 tasks, 10 pts
+•	(T401, 1 pts) VM1: Visit https://repos.zahariev.pro/ and follow the instructions to register the repository on the machine
+sudo dnf config-manager --add-repo https://repos.zahariev.pro/dnf
+•	(T402, 2 pts) VM1: Create a file /data/repos/packages.txt with the list of all available packages in the repository registered in T401
+dnf repolist
+sudo mkdir -p /data/repos
+dnf repository-packages repos.zahariev.pro_dnf list -> check package names
+dnf repository-packages repos.zahariev.pro_dnf list | sudo tee /data/repos/packages.txt
+•	(T403, 1 pts) VM1: Install the hello-lsa package from the repository registered in T401
+sudo dnf install --nogpgcheck hello-lsa
+hello-lsa
+•	(T404, 2 pts) VM2: Install NGINX Web Server, start it, and enable it to run on boot
+sudo dnf install nginx
+sudo systemctl start enable --now nginx -> start and enable at the same time
+•	(T405, 1 pts) VM2: Install the cowsay package and execute it with the following command cowsay 'Hello LSA(1)' > ~/cowsay.txt
+sudo dnf install epel-release
+dnf search cowsay
+cowsay 'Hello LSA(1)' > ~/cowsay.txt
+sudo dnf install cowsay
+•	(T406, 1 pts) VM2: Download the appropriate package for your distribution:
+o	For Red Hat-based and openSUSE-based, download: https://zahariev.pro/linux/hello-lsa/releases/hello-lsa-1.0-1.el8.x86_64.rpm 
+wget https://zahariev.pro/linux/hello-lsa/releases/hello-lsa-1.0-1.el8.x86_64.rpm 
+•	(T407, 2 pts) VM2: Install the downloaded package (do not delete the downloaded file)
+sudo rpm -ivh hello-lsa-1.0-1.el8.x86_64.rpm
+
+
+Scripting and Schedules - 7 tasks, 11 pts
+•	(T501, 1 pts) VM1: Create a bash script file (should contain signature at least) named processes.sh in the /data/scripts folder 
+sudo mkdir -p /data/scripts
+echo '#!/bin/bash' | sudo tee /data/scripts/processes.sh
+•	(T502, 1 pts) VM1: Change permissions of the /data/scripts/processes.sh file to executable for everyone
+sudo chmod +x /data/scripts/processes.sh
+•	(T503, 4 pts) VM1: When executed the processes.sh script should capture the date and time and the number of running processes and store (append) the results in the /tmp/processes.log file.
+For example, if the script is executed on 2023.10.24 at 10:15:53 and there are 82 processes, the row that would be stored in the file should be 2023-10-24 10-15-53 -> 82
+--------------------------------
+#!/bin/bash
+
+# Capture the date and time
+datetime=$(date +"%Y-%m-%d %H-%M-%S")
+
+# Count the number of running processes
+process_count=$(ps axh | wc -l)
+
+# Append the result to the processes.log file
+echo "$datetime -> $process_count" >> /tmp/processes.log
+-----------------------------------
+cat /tmp/processes.log
+•	(T504, 1 pts) VM1: Schedule the script for the exam user to execute every five minutes
+crontab -e -u exam
+*/5 * * * * /bin/bash /data/scripts/processes.sh
+•	(T505, 1 pts) VM2: Create a bash script file (should contain signature at least) named stars.sh in the /data/scripts folder 
+sudo mkdir -p /data/scripts
+echo '#!/bin/bash' | sudo tee /data/scripts/stars.sh
+•	(T506, 1 pts) VM2: Change permissions of the /data/scripts/stars.sh file to executable for everyone
+sudo chmod +x /data/scripts/stars.sh
+•	(T507, 2 pts) VM2: When executed the stars.sh script should accept one parameter (if not given, should return an error and exit) and print the symbol * in a row as many times as specified by the parameter.
+-----------------------------------------
+#!/bin/bash
+
+# Check if the script is called with a parameter
+if [ $# -ne 1 ]; then
+    echo 'error'
+    exit 1
+fi
+
+# Extract the parameter
+count=$1
+
+# Print '*' symbol in a row
+for i in $(seq 1 count); do
+    echo -n '*'
+done
+
+# Move to a new line after printing the stars
+echo
+-------------------------------------------
+/data/scripts/symbols.sh
+/data/scripts/symbols.sh 5
+/data/scripts/symbols.sh 10
+
+ТЕОРЕТИЧЕН ИЗПИТ
+you need to create a compressed archive of /etc to a removable disk drive mounted at /mnt/backup. Which commands will do this?
+tar -czvf /mnt/backup/backup.tar.gz /etc
+
+you need to format the second partition on the third sata disk using the ext4 file system. Which are the correct commands to do this (choose two) 
+mkfs.ext4 /dev/sdc2
+mkfs -t ext4 /dev/sdc2
+
+which two folders store systemd units of type service 
+/etc/systemd/system
+/usr/lib/systemd/system
+
+which of the following files is used to store user accounts related information on a linux system that has been configured to use local authentication (choose two)
+/etc/passwd
+/etc/shadow
+
+you created an ext4 file system on the first partition on the second hard disk in your system and now need to mount it in /mnt/extraspace in read-write mode. Which commands will do this(choose two)
+sudo mount -t ext4 /dev/sdb1 /mnt/extraspace
+sudo mount /dev/sdb1 /mnt/extraspace
+
+you need to switch your system to runlevel 3 which command should you use
+sudo systemctl isolate multi-user.target
+
+which configuration parameter in /etc/default/grub specifies how long the system will wait before the default operating system is booted
+GRUB_TIMEOUT
+
+where does the linux kernel reside?
+/boot
+
+Which of the listed is NOT (usually) part of the shell prompt?
+-Current date
+
+Which command can give us information about the system?
+-uname
+
+Which of the listed items is NOT part of a Linux distribution?
+-Community
+
+VirtualBox is a virtualization solution of type:
+-Type 2
+
+Which one is considered the most popular shell?
+-bash
+
+What will be the outcome if we execute the following command: alias inf='uname -a'
+-inf alias will be created or redefined
+
+Which of the following manual sections contains man pages for administrative utilities used by the root user?
+-8
+
+If we want to check if man contains information about samba for example, which command we can use?
+-man -k samba
+
+To change the user and group ownership of a folder and all files and folders in it, we should execute:
+-chown -R user.group /folder
+
+If we want to see a long list of files in /etc folder, which command we shall execute?
+-ls -l /etc
+
+The easiest way to get a distinct list of all shells used by local users is:
+-cut -d : -f 7 /etc/passwd | sort | uniq
+
+What will be the output if we execute: grep sh$ /etc/passwd
+-All lines that end with sh
+
+If we want to see the contents of a file in reverse, which command will do the job?
+-tac file
+
+If we want to list all files in /etc that have four character names and .conf extension, which command will do the job?
+ls -al /etc/????.conf
+
+If we want to see just a list of all local users, which command will do the job?
+cut -d : -f 1 /etc/passwd
+
+You have installed an RPM package file named newsoft-3.2.0-45.x86_64.rpm on your Linux system. What command would you use to uninstall this package?
+rpm -e newsoft
+
+ If we want to check IP addresses of all adapters, which command will do the job?
+ip address show
+
+To list all files in a package, we shall execute:
+rpm -qlp package.rpm
+
+Consider the following IP address: 10.0.0.2/14. Which subnet mask is assigned to this address?
+255.252.0.0
+
+Which command will install package without asking for confirmation?
+dnf install -y nano
+
+If we want to examine and optimize the boot-up time of the system, which command can help us most?
+systemd-analyze blame
+
+After we finished making changes to GRUB configuration file, which command should we execute?
+grub2-mkconfig -o /boot/grub2/grub.cfg
+
+If we want to check which is the default system target, which command can help us?
+systemctl get-default
+
+How can we make httpd service to start automatically on system boot?
+systemctl enable httpd
+
+If we want to turn off the system after twenty minutes, which command will do the job?
+shutdown -P 20
+
+Your Linux system has single SATA disk. Which of the following refers to the first partition on the drive?
+/dev/sda0
+
+You need to create a backup of /etc to a removable disk drive mounted at /mnt/backup. Which command will do this?
+tar -cvf /mnt/backup/backup.tar /etc
+
+How to extract all files from archive.tar.gz in /tmp?
+tar -xzvf archive.tar.gz -C /tmp
+
+If we want to create EXT4 file system on second partition on the third disk, which command 
+mkfs.ext4 /dev/sdc2
+
+Which command will create xz archive named archive.tar.xz of /etc folder?
+tar -cJvf archive.tar.xz /etc
+
+Which configuration file is the first file read when a login bash shell is run?
+/etc/profile
+
+Which is NOT a valid way to execute a bash script?
+call script.sh
+
+Which system variable can be used to get how many parameters are applied to a script?
+$#
+
+We want to produce list of numbers starting from 1 to 15 with step 3. Which command can do the job?
+seq 1 3 15
+
+In which file we can store logout routines, for example to cleanup the history?
+.bash_logout
+
+Which utility can be used to manipulate/edit text files on the fly?
+sed
+
+How does a loop block/body end in bash?
+done
+
+Which is NOT a valid loop statement in bash?
+repeat
+
+

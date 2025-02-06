@@ -1,0 +1,130 @@
+1.Github account - OK
+2.Render.com account
+3.NodeJS installed -OK
+4.Visual Studio Code - OK
+5. GIT installed
+
+Create Git repository:
+git fetch
+git add - A
+git checkout -b junior-dev
+
+go to boardgame folder:
+new terminal -> npm run start/npm start
+
+---------------- fix failing tests -----------
+new terminal for tests:
+npx playwright install   
+npm run test:ui
+
+------------commit changes to PL in git --------------
+git status
+git add -A
+git commit -m "fix tests"
+git push -u origin junior-dev
+
+--------- implement CI -------------------
+Repo -> Action -> search for 'node' -> adjust and commit.
+
+VCL:
+git checkout main
+git pull
+
+add display username script added:
+git add -A
+git commit -m " add softuni username echo"
+git push
+
+------------Implement CD --------------------
+Script for deploy in render.com 
+Dashboard + new -> Web Service -> Build and deploy from a Git repository
+name: ivaylorashkov-boardgames
+branch: main
+runtimeL Node
+start command: node index.js / npm run start
+
+-> set auto-deploy to No
+
+--------- create CD Action job -----------------
+https://github.com/marketplace/actions/render-deploy-action
+
+ deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to production
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.MY_RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.MY_RENDER_API_KEY }}
+
+* Add secrets  
+copy : MY_RENDER_SERVICE_ID and     MY_RENDER_API_KEY   
+1.MY_RENDER_SERVICE_ID 
+github_repo -> settings -> secrets and variables -> actions -> Repository secrets
+render -> settings -> Deploy Hook -> https://api.render.com/deploy/srv-clqr4eqe9h4c73ap6l5g?key=E2zi0D0rBjE
+needed secred is srv-clqr4eqe9h4c73ap6l5g
+
+2.MY_RENDER_API_KEY
+render ->  user -> account settings -> API keys -> Create API key
+name: Github1
+key :rnd_2Yc6P2EFBn2OSuM0zKHJ89YhPlK3
+
+git add -A
+git status
+git commit -m "add CD pipeline"
+git push 
+
+---------------Add UI tests -----------------
+Modify and add UI tests.
+recomended:
+build app(npm install)
+run unit tests(npm run test:unit)
+run ui tests ( npm run test:ui)
+run deploy
+
+***Actual result **
+create new Job in pipeline yml.
+
+run-ui-tests:
+    needs: deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout the repo
+      uses: actions/checkout@v3
+    - name: Use Node.js18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    - name: Install project dependencies
+      run: npm install
+    - name: Install Playwright
+      run: npx playwright install
+    - name: Run UI tests for the application 
+      run: npm run test:ui
+
+2. take the url from render https://ivaylorashkov-boardgames.onrender.com
+3. change the url in tests
+4. we can test if they are working now with npm run test:ui
+---------------------
+PS C:\Users\User\Desktop\software_devOps\exam_prep\boardgames> npm run test:ui
+
+> boardgames@1.0.0 test:ui
+> npx playwright test
+
+
+Running 6 tests using 6 workers
+
+  ✓  1 tests\ui\header.test.js:3:1 › Check header (3.4s)
+  ✓  2 tests\ui\about.test.js:3:1 › Check about page (3.6s)
+  ✓  3 tests\ui\add-boardgame.test.js:3:1 › Check add boardgame page (3.9s)
+  ✓  4 tests\ui\home.test.js:3:1 › Check home page (3.7s)
+  ✓  5 tests\ui\footer.test.js:3:1 › Check footer (3.6s)
+  ✓  6 tests\ui\boardgames.test.js:3:1 › Check boardgames page (3.7s)
+
+
+  6 passed (7.1s)
+-------------------------------
+commit the changes

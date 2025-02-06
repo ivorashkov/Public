@@ -1,0 +1,10 @@
+#Creating DB indexes and DB table fixes
+
+ CREATE INDEX country_index ON offers(country);
+ CREATE INDEX city_index ON offers(city);
+ CREATE INDEX duration_index ON offers(duration_in_days);
+ CREATE INDEX stars_index ON offers(stars);
+ CREATE INDEX price_index ON offers(price);
+ CREATE INDEX discount_index ON offers(discount);
+ CREATE INDEX user_id_index ON offers(user_id);
+

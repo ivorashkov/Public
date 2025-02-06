@@ -1,0 +1,110 @@
+# Задаване на базов образ
+FROM ubuntu:latest
+
+# Задаване на метаданни
+LABEL maintainer="you@example.com"
+LABEL version="1.0"
+LABEL description="Example Dockerfile with all options"
+
+# Задаване на аргументи за време на build
+ARG APP_ENV=production
+
+# Задаване на променливи на средата
+ENV APP_ENV=$APP_ENV
+ENV APP_PORT=8080
+
+# Инсталиране на зависимости
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    && apt-get clean
+
+# Копиране на файлове в контейнера
+COPY ./app /usr/src/app
+
+# Добавяне на файлове с друга команда
+ADD https://example.com/file.tar.gz /usr/src/app/
+
+# Работа с работната директория
+WORKDIR /usr/src/app
+
+# Изпълнение на команда по време на build
+RUN echo "Building the application..."
+
+# Задаване на volumes
+VOLUME ["/data"]
+
+# Задаване на портове
+EXPOSE 8080
+
+# Задаване на точки за вход
+ENTRYPOINT ["python3", "app.py"]
+
+# Задаване на команда по подразбиране
+CMD ["--help"]
+
+# Потребител, под който се изпълнява контейнера
+USER nobody
+
+# Указване на етап на build (за multi-stage builds)
+# Първи етап
+FROM node:16 as builder
+WORKDIR /app
+COPY . .
+RUN npm install && npm run build
+
+# Втори етап
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+
+# Stage 1: Build
+FROM node:18 AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Stage 2: Test
+FROM node:18 AS test
+WORKDIR /app
+COPY --from=build /app .
+RUN npm install --only=dev
+RUN npm test
+
+# Stage 3: Production
+FROM node:18-slim AS production
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY package*.json ./
+RUN npm install --only=prod
+EXPOSE 3000
+CMD ["node", "dist/index.js"]
+
+#########################################################
+
+# Stage 1: Build
+FROM node:18 AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# Stage 2: Test
+FROM node:18 AS test
+WORKDIR /app
+COPY --from=build /app .
+RUN npm install --only=dev
+RUN npm test
+
+# Stage 3: Production
+FROM node:18-slim AS production
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY package*.json ./
+RUN npm install --only=prod
+EXPOSE 3000
+CMD ["node", "dist/index.js"]

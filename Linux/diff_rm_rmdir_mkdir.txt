@@ -1,0 +1,31 @@
+mkdir, command in Linux allows the user to create directories 
+mkdir -v [directories] It displays a message for every directory created.
+mkdir -p first/second/third -> enables the command to create parent 
+directories as necessary. If the directories exist, no error is specified.
+mkdir -m a=rwx [directories]
+
+------------------------------------------------
+rmdir - remove directory rmdir <options> <directory>
+-p: This option removes the directory, including all its ancestors 
+rmdir -p mydir1/mydir2/mydir3/...../mydirN
+
+----------------------------------------------
+rm, rm [OPTION] FILE1 FILE2
+rm -r -> rm doesnt delete directories without -r -R usually.
+rm -i file1 file2 
+the -i option makes the command ask the user for 
+confirmation before removing each file, 
+you have to press y for confirm deletion
+
+------------------------------------------
+Recursive means that Linux or Unix command works with the contains of directories,
+ and if a directory has subdirectories and files,
+ the command works on those files too (recursively).
+--------------------------------------------------
+-------------------------------------------------
+diff,
+diff file1 file2 # compares 2 files and shows differences between them
+# -y  -> compares files line by line
+# -u  -> files difference versions format
+# -r  -> compare recursively
+# -rq -> defines if files differ

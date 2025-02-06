@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  sqlserver:
+    container_name: Homies
+    image: mcr.microsoft.com/mssql/server:latest
+    ports:
+      - '1433:1433'
+    # deploy:
+    #   resources:
+    #     reservations:
+    #         cpus: '2'
+    #         memory: 2GB  
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=myStrongPassword12#
+    volumes:
+      - sqldata:/var/opt/mssql/sqlserver
+
+  web_app:
+    container_name: web-app
+    domainname: ivorashkovdomainexam
+    build:
+      dockerfile: ./Dockerfile
+    image: ivaylorashkovhomiesscr.azurecr.io/homies:latest
+    ports:
+      - '80:80'
+    restart: on-failure
+
+volumes:
+  sqldata:
+    # driver: azure_file
+    # driver_opts:
+    #   share_name: sql-volume
+    #   storage_account_name: ivaylorashkovhomiessc

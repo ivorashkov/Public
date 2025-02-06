@@ -1,0 +1,57 @@
+name: Build Test Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+        cache: 'npm'
+    - name: Install node modules
+      run: npm install
+    - name: Install Playwright
+      run: npx playwright install
+    - name: Change the config value
+      run: echo "export const settings = { host:\"http://localhost:3030\" };" > src/config.js
+    - name: Start BackEnd
+      run: npm run start-be &
+    - name: Wait 5 seconds
+      run: sleep 5
+    - name: Start FrontEnd
+      run: npm run start-fe &
+    - name: Wait 5 seconds
+      run: sleep 5
+    - name: Start Integration tests
+      run: npm run test
+
+  deploy-backend:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      # can use get request with deploy hook from render instead of running the steps below
+      - name: Deploy to production
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_BACKEND_KEY }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+
+  deploy-frontend:
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    steps:
+      # can use get request with deploy hook from render instead of running the steps below
+      - name: Deploy to production
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_FRONTEND_KEY }}
+          api-key: ${{ secrets.RENDER_API_KEY }}

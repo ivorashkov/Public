@@ -1,0 +1,3435 @@
+Documentation:
+1.Ansible Modules:
+    -   https://docs.ansible.com/ansible/latest/collections/index_module.html
+Check existing modules befora creating own from scratch.
+
+2.Ansible Executable:
+    -   typing ansible at prompt where ansible is installed
+    -   great for initially setting up a project and testing ansible conf.
+    -   easy to use with ansible Modules
+    -   easy to use with ansible target infrastructure
+
+3.Ansible inventory:
+    -   Inventory is collection of targets(Hosts, Network Switches, Containers, Storage Arrays etc.).
+    -   Also provides with some additional info for the targets that can be used.
+    -   Dynamic inventory - the inventory is executable with data being sourced dynamically.
+(we can store data elsewhere and make use of it run time)
+
+Installing ansible lab in : C:\Users\User\diveintoansible-lab
+acc:ansible
+password: password
+
+Configure SSH connectivity between hosts:
+
+Ansible is an agentless architecture and therefore for connectivity to take place between
+Ansible and our targets a trusted relationship is required for automated passwordless connectivity.
+
+creating fingerprint to host we should:
+SSH to it: 
+    ssh {hostname} ->  ssh ubuntu1
+
+known_hosts file is stored in .ssh/
+ssh information is kept in a kidden directory called .ssh/
+
+The fingerprint usually generates 2 key strings:
+    -   one for the hostname and one for the IP address of that host.
+
+1. generating fingerptint ourselves with 'ssh-keygen'
+    ssh-keygen -H -F ubuntu1
+
+2. ping ubuntu1 -> get the ip address
+    ssh-keygen -H -F {IP address}
+
+Where we would like Ansible to be able to connect and manage our systems without password
+Ansible uses SSH. 
+To be able to resolve this we should implement ssh layer
+What we did with the password shows that the secure channel is established, we entered
+the password and this sends securely through the channel to our target -> ubuntu1.
+Once its validated we have connectivity, but we don't want to enter password like this
+every time.
+What we do is use SSH to create public and private keys, which can be used for access
+We will create keypair public&private key in ubuntu-c, on our target hosts within
+our .ssh directory we can utilize what is known as the autorized keys file,
+allowing us to add the public keys of our trusted hosts.
+
+Ubuntu-c
+1. ssh-keygen -> generates files in .ssh/
+    cat .ssh/id_rsa.pub  -> public key
+    cat .ssh/id_rsa -> private key
+We can just copy the contents of the public key to the authorized_keys file on a remote system
+If we do it manually we need to make sure permissions of authorized_keys and the .ssh directory
+are correct.
+
+There is a better way of doing so -> the tool bundled with ssh known as ssh-copy-id
+1. ssh-copy-id {username}@{targetHost} -> ssh-copy-id ansible@ubuntu1
+    We can now try the passwordless connection: ssh ubuntu1
+
+We don't need to have fingerprint set before executing 'ssh-copy-id'
+
+We want to copy our public key to all of our target systems as both the ansible and root user.
+Manually can be done but will take longer period of time.
+We can quickly automate this -> install program called 'sshpass'
+
+ubuntu-c:
+1. sudo apt update
+2. sudo apt install sshpass
+3. echo password > password.txt -> create pswd file called password.txt
+4. bash script -> sshpass.sh / chmod +x sshpass.sh ./sshpass.sh
+5. rm password.txt
+6. quick ANsible check if it can reach all hosts: 
+- ansible -i,ubuntu1,ubuntu2,ubuntu3,centos1,centos2,centos3 all -m ping
+    -i for inventory (usually can specify inventory file or use comma to specify inventory in command line);
+    -all ( group of hosts that we wish to target)
+    -m (ansible module) {ping} -> try to connecto to the host, return pong if successful.
+7.rm .ssh/known_hosts -> Remove known_hosts file
+
+Setting up the repository: https://github.com/spurin/diveintoansible
+log into ubuntu-c and clone the repo;
+
+docker exec --user ansible -it ubuntu-c bash
+git clone https://github.com/spurin/diveintoansible.git
+
+Ansible architecture and design:
+
+***** Ansible Configuration *****
+
+1. Ansible config file in /etc/ansible/:
+ansible@ubuntu-c:~$ ansible --version
+    config file = None -> /etc/ansible/ansible.cfg (the default ansible location)
+root@ubuntu-c:~# mkdir /etc/ansible/ 
+root@ubuntu-c:~# touch /etc/ansible/ansible.cfg
+ansible@ubuntu-c:~$ ansible --version
+    config file = /etc/ansible/ansible.cfg
+
+
+2.Ansible config file in home directory:
+~/.ansible.cfg -> a hidden file in the users home directory
+ansible@ubuntu-c:~$ touch .ansible.cfg
+    config file = /home/ansible/.ansible.cfg -> this file has higher priority than /etc/ansible/ansible.cfg
+
+3.Ansible config file in current directory:
+./ansible.cfg -> enables to have related Ansible conf along your ansible execution encompassed as one entity.
+Ansible repo is build on this logic where we have individual directories and each of them have
+their own ansible.cfg file.
+
+ansible@ubuntu-c:~/testdir$ touch ansible.cfg
+ansible@ubuntu-c:~/testdir$ ansible --version
+config file = /home/ansible/testdir/ansible.cfg -> Higher prio on local level.
+
+4.Variable ANSIBLE_CONFIG (Environment Variable, with filename target):
+ansible@ubuntu-c:~$ touch this_is_my_ansible.cfg
+ansible@ubuntu-c:~$ export ANSIBLE_CONFIG=/home/ansible/this_is_my_ansible.cfg 
+ansible@ubuntu-c:~$ ansible --version
+    config file = /home/ansible/this_is_my_ansible.cfg
+ansible@ubuntu-c:~$ unset ANSIBLE_CONFIG
+
+***** Ansible Inventories *****
+cd '.\ansible_home\ubuntu-c\ansible\diveintoansible\Ansible Architecture and Design\Inventories\template\'
+ansible@ubuntu-c:~$ cd diveintoansible/Ansible\ Architecture\ and\ Design/Inventories/01/
+
+exercise 01:
+ansible all -m ping -> will ask us to verify the key check
+It can be ignored by using variable: ANSIBLE_HOST_KEY_CHECKING=False
+
+We can place the variable before the check so we can test it for this specific command.
+This is useful where we want the var to be specified for a single command only
+
+ansible@ubuntu-c:~../ 01$ ANSIBLE_HOST_KEY_CHECKING=False ansible all -m ping
+
+exercise 02:
+To make this permanent we can add entry to our ansible configuration file in 02.
+remove known hosts before test again so it can clear the information.
+ansible@ubuntu-c:~../ 02$ rm -rf /home/ansible/.ssh/known_hosts
+ansible@ubuntu-c:~../02$ ansible all -m ping -> success
+
+exercise 03:
+When we have mixture of centos and ubuntu hosts:
+
+By default all groups are part of 'all' group.
+If we try to ping using the all group it will ping all listed hosts
+ansible@ubuntu-c:~../03$ ansible all -m ping
+
+We can also target specific groups:
+ansible@ubuntu-c:~../03$ ansible centos -m ping
+ansible@ubuntu-c:~../03$ ansible ubuntu -m ping
+
+We can also use wild card symbol
+ansible@ubuntu-c:~../03$ ansible '*' -m ping -> it will take all hosts
+
+We can also use -o after ping to have the response json in 1 line for each ping:
+ansible '*' -m  ping -o
+
+List all hosts in a group:
+ansible@ubuntu-c:~../03$ ansible centos --list-hosts
+ansible@ubuntu-c:~../03$ ansible ubuntu --list-hosts
+ansible@ubuntu-c:~../03$ ansible all --list-hosts
+ansible@ubuntu-c:~../03$ ansible '*' --list-hosts
+
+Regex:
+ansible ~.*3 --list-hosts
+~ -> Regex
+. -> any char
+* -> any number of previous
+3 -> matching char
+
+exercise 04:
+In order for Ansible to do more stuff we would need Ansible to have root privileges
+We can manage that in hosts by setting up ansible_user=root variable for all centos hostsfor example.
+
+to confirm that it is now using the root user we should switch the module.
+We want to run the command called 'id' to show us more details about the used users
+
+We can use ansible to run specific command in remote host using the module called 'command'
+ansible@ubuntu-c:~../04$ ansible all -m command -a 'id' -o
+
+exercise 05:
+In real world scenario we don't want to login directly as root user.
+We should login as normal user and then from within the user should be changed to 'root'.
+ubuntu1 ansible_become=true ansible_become_pass=password
+
+The 'COMMAND' module is the default module used by ansible 
+We can specify it or not:
+ansible@ubuntu-c:~../05$ ansible all -m command -a 'id' -o
+ansible@ubuntu-c:~../05$ ansible all -a 'id' -o
+
+exercise 06:
+What if SSH is running on different ports than 22, for example 2222
+Ansible is set to communicate using default port 22 for SSH:
+This can be set in the inventory hosts with var file ansible_port=2222
+
+exercise 07:
+Another option to specify the port is after the host as we are doing in usual SSH:
+"centos1:2222 ..."
+
+exercise 08:
+In the inventory hosts file we added new [control] group
+for ubuntu-c with var ansible_connection=local -> no transport mechanism like SSH is required.
+if we now ping again it will also include ubuntu-c self response to ansible.
+
+exercise 09:
+If we have commonality between hosts we can simplify and use ranges in the inventory:
+Example:
+centos[2:3] ...
+ubuntu[1:3] ...
+
+We can verify if all hosts are still available with 'ansible all --list-hosts' as well or we can ping them
+to see if it's working.
+
+exercise 10:
+Creating group vars for all hosts to inherit:
+creating [centos:vars] and [ubuntu:vars] groups
+
+exercise 11:
+Creating linux group for all children hosts -> centos and ubuntu as part of linux OS.
+We can now work directly with [linux:children] group.
+ansible@ubuntu-c:~../11$ ansible linux -m ping -o
+
+exercise 12:
+Since every group is part of 'All' group we can use that and apply vars to all hosts:
+[all:vars]
+ansible_port=1234
+
+Specific configured vars as port 2222 on centos1 will be taken in consideration and all group
+variable will not affect it.
+
+ubuntu-c will also not be affected because it uses local connection.
+
+exercise 13:
+We can also apply global vars for group linux:
+[linux:vars]
+ansible_port=1234
+
+All children will receive the vars. But specific vars as centos1 will still be with higher priority.
+
+exercise 14:
+So far all inventory files have been in ini format.
+inventory can be written in yaml, json or ini, we can specify that in ansible.cfg file:
+inventory = hosts.yaml
+
+exercise 15:
+Converting yaml inventory to json with python command in CLI:
+python3 -c 'import sys, yaml, json; json.dump(yaml.load(sys.stdin, Loader=yaml.FullLoader), sys.stdout, indent=4)' < hosts.yaml > hosts.json
+
+ansible.cfg is configured to use hosts.json
+
+exercise 16:
+we put ansible.cfg to use the standard inventory file.
+we can use inventory command to see if all inventory files are working properly:
+ansible@ubuntu-c:~../16$ ansible all -i hosts --list-hosts
+ansible@ubuntu-c:~../16$ ansible all -i hosts.yaml --list-hosts
+ansible@ubuntu-c:~../16$ ansible all -i hosts.json --list-hosts
+
+Another CLI option is -e (EXTRA_VARS) -> set additional variables as key=value or yaml/json,
+ if filename prepend with @. Can also be used to override existing variables in the inventory:
+
+ansible linux -m ping -e 'ansible_port=22' -o -> centos1 will fail because its working on 2222,
+but this override is higher priority than the ansible_port vars in the file, so the ping 
+will be expected only for port 22.
+
+***** Ansible Modules *****
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html
+
+1. Setup Module -> for collecting information a.k.a "Ansible facts":
+    1. This module is automatically executed when using playbooks
+to gather useful information as variables about remote targets. (The info can be used during execution);
+    2. Can also be executed directly by the ansible command to find out the vars available to a host;
+    3. Ansible provides many facts about target automatically;
+    4. This module is also supported for windows targets;
+    5. Ansible 2.10 this has been moved to ansible-base and is classed as builtin plugin.
+Can be referenced as setup or ansible.builtin.setup;
+    6. https://docs.ansible.com/ansible/latest/collections/ansible/builtin/setup_module.html#ansible-collections-ansible-builtin-setup-module
+
+ansible@ubuntu-c:~/diveintoansible/Ansible Architecture and Design/Modules$ 
+hosts is the same as "exercise 16":
+
+* ansible centos1 -m setup -> Json of all settings for that host
+* ansible centos1 -m setup | more
+
+
+2. File Module -> file related operations;
+    1.Sets attributes of files, symlinks and directories or removes files, symlinks and directories;
+    2.Many other modules support the same options as the file module, including copy, template and assemble
+    3.For windows targets use the [win_file] module instead;
+    4.in Ansible 2.10 is moved to ansible base and is classed as a builtin plugin.
+Can be referenced as 'file' or 'ansible.builtin.file'
+    5.https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html#ansible-collections-ansible-builtin-file-module
+
+Using file module with combination of path and state will provide us with the same outcome as touch command;
+
+-a -> argument;
+* ansible all -m file -a 'path=/tmp/test state=touch' -> creates file in all hosts;
+
+We can check it in our host -> ls -la /tmp/test or other host: ssh centos2 ls -la /tmp/test
+
+
+3. Color notations used during Ansible execution
+* RED -> Failure
+* YELLOW -> Success with changes
+* GREEN -> success no changes
+
+ansible all -m file -a 'path=/tmp/test state=file mode=600' 
+=> set RW permissions for Users on that file all hosts
+
+4. Idempotence (related to color module);
+Operation is Idempotent if the result of performing it once is exactly the same as the result
+of performing it repeatedly without any intervening actions.
+
+This feature is very powerful when it comes to Ansible as hosts can be in varying states
+providing that Ansible can get the desired outcome this task is deemed as successful.
+
+ansible@ubuntu-c:~../Modules$ chmod 644 /tmp/test 
+ansible@ubuntu-c:~../Modules$ ansible all -m file -a 'path=/tmp/test state=file mode=600'
+
+Just one file will be returned to 600 (the one in ubuntu-c) but the overall status for all hosts will be 
+successful.
+
+When we use playbooks, the Ansible will continue run with changed or successful state.
+
+5. Copy module;
+    1. Copies a file from local or remote target to a location on the remote target.
+Use the [fetch] module to copy files from a remote target to a local target.
+    2. if you need variable interpolation in the copied files, use the [template] module;
+    3. For windows targets use the [win_copy] module instead;
+    4. in Ansible 2.10 has been moved as builtin plugin(copy or ansible.builtin.copy)
+    5.https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+
+ansible@ubuntu-c:~../Modules$  touch /tmp/x
+ansible@ubuntu-c:~../Modules$  ansible all -m copy -a 'src=/tmp/x dest=/tmp/x'
+
+ubuntu-c green and others are in yellow, the "checksum" field is used to determine
+whether the copy was needed and was successful.
+
+We can also use copy module to copy files on the remote system to the remote system
+ansible@ubuntu-c:~../Modules$ ansible all -m copy -a 'remote_src=yes src=/tmp/x dest=/tmp/y'
+
+6. Command module; [Default module]
+    1.Takes the command name followd by a list of space-delimited arguments
+    2.the command will be executed on all selected nodes;
+    3.It is not processed through the shell, so variables like $HOME and operations line <,>,|,; and &
+will not work. Use the [shell] module if you need these features
+    4.Windows targets use the [win_command] module;
+    5.2.10 Ansible is builtin and reference is command or ansible.builtin.command
+    6.https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+
+ansible@ubuntu-c:~../Modules$ ansible all -a 'hostname' -o
+
+Creating and removing variable can be used for idempotence.
+If the created variable is used, if the following file already exists the command wont be run.
+
+ansible all -a 'state:touch /tmp/test_command_module creates=/tmp/test_command_module'
+ansible all -a 'touch /tmp/test_command_module creates=/tmp/test_command_module'
+
+-> will give us warrning and if we run it for 2nd time, it will skip the command, because
+it's already existing.
+
+Another way of using idempotence is to only run a command if the file exists.
+ansible all -a 'rm /tmp/test_command_module removes=/tmp/test_command_module'
+ansible all -a 'state:absent /tmp/test_command_module removes=/tmp/test_command_module'
+
+FETCH_MODULE:
+ansible all -m file -a 'path=/tmp/test_modules.txt state=touch mode=600' -o
+ansible all -m fetch -a 'src=/tmp/test_modules.txt dest=/tmp/' -o
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/fetch_module.html
+
+7. Ansible doc -> 
+ansible-doc file
+ansible-doc fetch...
+
+We also have the path to the source code within the ansible distribution:
+ANSIBLE.BUILTIN.FETCH (/usr/local/lib/python3.10/dist-packages/ansible/modules/fetch.py)
+
+**** Ansible Playbooks Introduction ****
+1. Playbook allows us to perform many actions across multitude of systems,
+using modules. 
+Playbooks can be in YAML and JSON, although the YAML is the predominant standard.
+
+EXAMPLE 01:
+./show_yaml_python.sh -> using this python script to show how Ansible will read the file.
+
+EXAMPLE 02:
+ansible@ubuntu-c:~02$ ./show_yaml_python.sh 
+{'example_key_1': 'this is a string', 'example_key_2': 'this is another string'}
+$ python3
+myvar = {'example_key_1': 'this is a string', 'example_key_2': 'this is another string'}
+print(myvar)
+print(myvar['example_key_2'])
+this is another string
+
+EXAMPLE 04:
+{'double_quotes': 'this is a string example\n',
+ 'no_quotes': 'this is a string example\\n',
+ 'single_quotes': 'this is a string example\\n'}
+-> no quotes and single quotes are using escape char \ for '\n',
+not giving us the option to use new line code.
+
+EXAMPLE 05:
+when we have string on multiple lines we can start with | to identify it as
+multiline string:
+"example_key_1: | <String>
+....
+"
+ansible@ubuntu-c:~/diveintoansible/Ansible Playbooks, Introduction/YAML/05$ ./show_yaml_python.sh 
+{'example_key_1': 'this is a string\nthat goes over\nmultiple lines\n'}
+
+EXAMPLE 06:
+If we have long string and want to represent it as single line we use '>' before the string.
+At the end of string we still have new line escape chars '\n';
+ansible@ubuntu-c:~/diveintoansible/Ansible Playbooks, Introduction/YAML/06$ ./show_yaml_python.sh 
+{'example_key_1': 'this is a string that goes over multiple lines\n'}
+
+EXAMPLE 07:
+If we don't want new line escape char at the end of the string we use '>-'
+ansible@ubuntu-c:~/diveintoansible/Ansible Playbooks, Introduction/YAML/07$ ./show_yaml_python.sh 
+{'example_key_1': 'this is a string that goes over multiple lines'}
+
+EXAMPLE 08:
+Ints are just numbers in the playbook:
+example_integer: 1
+
+ansible@ubuntu-c:~/diveintoansible/Ansible Playbooks, Introduction/YAML/08$  python3
+Python 3.10.12 (main, Nov 20 2023, 15:14:05) [GCC 11.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> myvar = {'example_integer': 1}
+>>> print(myvar['example_integer'])
+1
+>>> print(type(myvar['example_integer']))
+<class 'int'>
+>>>
+
+EXAMPLE 09: if we use quotes on int value it becomes a string.
+
+EXAMPLE 10: Booleans in YAML: True, False are the best practices 
+even though there are many ways to say it and python will recognize it.
+
+EXAMPLE 11:
+All previous examples so far have correlated to Python dictionary,
+but we can also use list of items in YAML:
+- item 1
+- item 2
+- item 3
+ansible@ubuntu-c:~/diveintoansible/Ansible Playbooks, Introduction/YAML/11$ ./show_yaml_python.sh 
+['item 1', 'item 2', 'item 3', 'item 4', 'item 5']
+ansible@ubuntu-c:~/diveintoansible/Ansible Playbooks, Introduction/YAML/11$ python3
+Python 3.10.12 (main, Nov 20 2023, 15:14:05) [GCC 11.4.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> myvar = ['item 1', 'item 2', 'item 3', 'item 4', 'item 5']
+>>> print(myvar)
+['item 1', 'item 2', 'item 3', 'item 4', 'item 5']
+>>> print(myvar[0])
+item 1
+>>>
+
+EXAMPLE 13:
+Sometimes Dictionaries in Playbooks can be with different structure:
+{example_key_1: example_value_1, example_key_2: example_value_2} 
+OR
+example_key_1: example_value_1
+example_key_2: example_value_2
+
+Both are correct and Python reads them the same way.
+
+EXAMPLE 14:
+Lists can be also written like this:
+[example_list_entry_1, example_list_entry_2]
+
+EXAMPLE 15:
+We cannot have List and Dictionary values at the same time in 1 YAML block:
+example_key_1: example_value_1
+- example_list_entry_1
+OR
+{example_key_1: example_value_1}
+[example_list_entry_1]
+
+EXAMPLE 17:
+We often may see such blocks in YAML:
+Dictionary of dictionaries:
+
+example_key_1:
+  sub_example_key1: sub_example_value1
+
+example_key_2:
+  sub_example_key2: sub_example_value2
+
+ansible@ubuntu-c:~/diveintoansible/Ansible Playbooks, Introduction/YAML/17$ ./show_yaml_python.sh 
+{'example_key_1': {'sub_example_key1': 'sub_example_value1'},
+ 'example_key_2': {'sub_example_key2': 'sub_example_value2'}}
+
+EXAMPLE 18:
+Dictionary with list of values:
+example_1: 
+  - item_1
+  - item_2
+  - item_3
+
+example_2: 
+  - item_4
+  - item_5
+  - item_6
+
+ansible@ubuntu-c:~/diveintoansible/Ansible Playbooks, Introduction/YAML/18$ ./show_yaml_python.sh 
+{'example_1': ['item_1', 'item_2', 'item_3'],
+ 'example_2': ['item_4', 'item_5', 'item_6']}
+
+
+EXAMPLE 19:
+Dictionary, consist of list of dictionary consist of a list of items:
+example_dictionary_1:
+  - example_dictionary_2:
+    - 1
+    - 2
+    - 3
+  - example_dictionary_3:
+    - 4
+    - 5
+    - 6
+  - example_dictionary_4:
+    - 7
+    - 8
+    - 9
+
+ansible@ubuntu-c:~/diveintoansible/Ansible Playbooks, Introduction/YAML/19$ ./show_yaml_python.sh 
+{'example_dictionary_1': [{'example_dictionary_2': [1, 2, 3]},
+                          {'example_dictionary_3': [4, 5, 6]},
+                          {'example_dictionary_4': [7, 8, 9]}]}
+
+CHALLENGE:
+
+
+List start with '-', dictionary finishes with ':'
+
+Ansible Playbooks Breakdown of Sections:
+/home/ansible/diveintoansible/Ansible Playbooks, Introduction/Ansible Playbooks, Breakdown of Sections:
+
+The minus in YAML this indicates a list item. 
+The playbook contains a list of plays, with each play being a dictionary
+
+-
+  # Hosts: where our play will run and options it will run with
+
+  # Vars: variables that will apply to the play, on all target systems
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  #       can also be used for pre and post tasks
+
+  # Handlers: the list of handlers that are executed as a notify key from a task
+
+  # Roles: list of roles to be imported into the play
+
+# Three dots indicate the end of a YAML document
+...
+
+** Ansible_CONFIG **
+
+1.ANSIBLE_CONFIG(Environment Variable, with a filename target); - FIRST PRIO
+2../ansible.cfg (ansible.cfg file, in the current dir); - SECOND PRIO
+3.~/.ansible.cfg (hidden file, called .ansible,cfg, in the users home); - THIRD PRIO
+4./etc/ansible/ansible.cfg (typically provided, through packaged or system installations of Ansible); - FOURTH PRIO
+
+-----------------------------------
+
+Target section: become, connection, gather fact and others.
+
+we can test out the time ansible takes by typing:
+time ansible-playbook {target.playbook.yml}
+
+EXERCISE 02/03 -> depending on src file
+EXERCISE 04 -> changing src to content described directly witin playbook.
+EXERCISE 05 -> add '\n' and using var to keep the content.
+- calling var: "{{ var }}" -> jinja2 template system.
+we can add vars within the command line using: -e or --extra-vars:
+ansible-playbook target_playbook.yaml -e 'var="Var Value\n"'
+
+EXERCISE 06 -> Handlers have the same syntax as 'tasks'
+They are called from tasks section from the 'notify' section.
+The name in 'notify' should be the same as the 'name' for the handlers
+we are calling.
+
+Handlers are only executed once at the end 
+of the tasks when there is a change.
+
+if there is no change, we would not have the debug output from the handler.
+
+EXERCISE 07 -> it will now cover centos and ubuntu using
+task directives - the 'when' directive, we are going to use
+information from setup facts process to make a decision on when to run
+specific task.
+
+*** ansible all -i centos2, -m setup | more -> to get the "ansible_distribution"
+var that we will be using for this when operation.
+
+** ansible all -i centos2,ubuntu2 -m setup | grep ansible_distribution
+
+We also removed user: root to rely on our inventory.
+
+*** Ansible Role *******
+A role is a way of associating variables, tasks and handlers based on A
+grouping file structure.
+
+Often makes sense to restructure playbooks into roles for easy reuse.
+
+CHALLENGE:
+ansible -i hosts linux -m  ping -o
+
+Add target hosts and test with ansible-playbook motd_playbook.yaml 
+
+
+  tasks:
+    - name: Configure a MOTD (message of the day)
+      copy:
+        content: "{{ motd_centos }}"
+        dest: /etc/motd
+      notify: MOTD changed
+      when: ansible_distribution == "CentOS"
+
+    - name: Configure a MOTD (message of the day)
+      copy:
+        content: "{{ motd_ubuntu }}"
+        dest: /etc/motd
+      notify: MOTD changed
+      when: ansible_distribution == "Ubuntu"
+
+  vars:
+    motd_centos: "Welcome to CentOS Linux - Ansible Rocks\n"
+    motd_ubuntu: "Welcome to Ubuntu Linux - Ansible Rocks\n"
+
+ansible ubuntu -m file -a 'path=/etc/update-motd.d/60-ansible-motd state=absent' -o
+
+Documentation:https://docs.ansible.com/ansible/devel/reference_appendices/playbooks_keywords.html
+
+**** Ansible Playbook Variables: ****
+
+ cd diveintoansible/Ansible\ Playbooks\,\ Introduction/Ansible\ Playbooks\,\ Variables/
+
+ we can pass extra variables using this ini format:
+ ansible-playbook variables_playbook.yaml -e extra_vars_key="extra vars value"
+
+we can pas using json format:
+ansible-playbook variables_playbook.yaml -e {"extra_vars_key": "extra vars value"}
+
+we can also pass vars using yaml format:
+ansible-playbook variables_playbook.yaml -e {extra_vars_key: extra vars value}
+
+we can also pass vars as entire yaml file:
+ansible-playbook variables_playbook.yaml -e @extra_vars_file.yaml
+
+we can also pass vars as entire json file:
+ansible-playbook variables_playbook.yaml -e @extra_vars_file.json
+
+Using directories for Hostvars and Groupvars:
+- using directories for host and group vars with combination with yaml file;
+- exercise 15,16 and 17 have host_vars and group_vars folders;
+- Hostvars use the directory structure:
+  - hostvars/hostname {host_vars/ubuntu-c}
+- Groupvars use the directory structure:
+  - group_vars/group {group_vars/ubuntu}
+
+https://docs.ansible.com/ansible/devel/reference_appendices/special_variables.html
+
+******** ANSIBLE FACTS ***********
+1.Setup Module - how this relates to fact gathering;
+2.Filtering for specific facts;
+3.The creation of custom facts;
+4.The execution of custom facts;
+5.How custom facts can be uset in environments, without super user access;
+6.https://docs.ansible.com/ansible/latest/collections/ansible/builtin/setup_module.html
+
+
+ansible centos1 -m setup -a 'gather_subset=network' | more
+ansible centos1 -m setup -a 'gather_subset=!all,!minnetwork' | more
+01$ ansible centos1 -m setup -a 'gather_subset=!all,!min,network' | wc -l
+01$ ansible centos1 -m setup -a 'gather_subset=network' | wc -l
+
+We can filter by specific fact:
+ansible centos1 -m setup -a 'filter=ansible_memfree_mb'
+ansible centos1 -m setup -a 'filter=ansible_mem*'  -> wild card
+
+When playbook automatically executes the gathering of facts,
+these facts are placed into the variable namespace and are accessible for 
+each host:
+'ansible_facts' -> всеки модул може да върне 'речник' с името 'ansible_facts'
+ансибъл автоматично ще добави тези променливи към корена (root)
+ пространството за променливи на тоя хост.
+(We can ignore ansible_facts when making use of facts in our playbooks)
+There is no ansible_facts key in the playbook context but all of the content
+underneath it is directly available. 
+In playbook:
+msg: "{{ ansible_default_ipv4.address }}" -> we do not specify the 'ansible_facts'
+keyword but use directly next levels.
+
+** custom facts ****
+1. can be written in any language
+2. returns a JSON structure
+3. or/Returns an ini structure
+4. By default, expects to use /etc/ansible/facts.d
+
+Any script that returns either json or ili structure can be custom fact.
+The ini format requires category or it will fail to execute for ansible.
+
+Usually facts are placed on /etc/ansible/facts.d, which is OK if we have
+root access to a system, but is less desirable if we are not running as root user,
+or prefer to keep configurations out of the root file system.
+
+If ansible is used in restricted environment where we don't have root privileges
+remove the custom facts:
+ansible linux -m file -a 'path=/etc/ansible/facts.d/getdate1.fact state=absent'
+ansible linux -m file -a 'path=/etc/ansible/facts.d/getdate2.fact state=absent'
+
+EXERCISE 06:
+We should create facts.d directory within the ansible project folder.
+1.We should create /home/ansible/facts.d in all targets as ansible user;
+2. Then copying the facts to the ansible users /home/ansible/facts.d/{custom.fact}
+3.Reloading facts with setup by using the specific path /home/ansible/facts.d/
+4.Run playbook;
+5. remove facts from home systems:
+/templates$ sudo cp * /etc/ansible/facts.d/
+
+and if we page through the facts:
+ansible ubuntu-c -m setup | more
+
+ "ansible_local": {
+            "getdate1": {
+                "date": "Thu Jun  6 20:10:01 UTC 2024"
+            },
+            "getdate2": {
+                "date": {
+                    "date": "Thu Jun 6 20:10:01 UTC 2024"
+                }
+            }
+
+Easier way to find the data is to filter:
+ansible ubuntu-c -m setup -a 'filter=ansible_local'
+
+ubuntu-c | SUCCESS => {
+    "ansible_facts": {
+        "ansible_local": {
+            "getdate1": {
+                "date": "Thu Jun  6 20:14:08 UTC 2024"
+            },
+            "getdate2": {
+                "date": {
+                    "date": "Thu Jun 6 20:14:08 UTC 2024"
+                }
+            }
+        },
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false
+
+    - name: Show IP Address
+      debug:
+        msg: "{{ ansible_default_ipv4.address }}"
+
+    - name: Show Custom Fact 1
+      debug:
+        msg: "{{ ansible_local.getdate1.date }}"
+
+    - name: Show Custom Fact 2
+      debug:
+        msg: "{{ ansible_local.getdate2.date.date }}"
+
+03$ ansible-playbook facts_playbook.yaml -l ubuntu-c
+-> Running the playbook for ubuntu-c only by limiting it 
+within the CLI, because only ubuntu-c has local custom facts.
+
+EXERCISE 04:
+    - name: Show Custom Fact 1 in hostvars
+      debug:
+        msg: "{{ hostvars[ansible_hostname].ansible_local.getdate1.date }}"
+
+    - name: Show Custom Fact 2 in hostvars
+      debug:
+        msg: "{{hostvars[ansible_hostname].ansible_local.getdate2.date.date }}"
+
+The facts are also available in the hostvars section
+https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_vars_facts.html
+
+all variables in 'ansible -m setup {hostname}' are listed in hostvars.
+
+Facts are nothing more than setup module being run gives us powerful
+to refresh facts while dynamically adding facts to the
+system through a direct call to the setup module.
+
+****** Templating with Jinja2 *************
+
+break and continue are not included in ansible functionality,
+we can add them using jinja2 extension.
+(in ansible.cfg -> jinja2_extensions = jinja2.ext.loopcontrols)
+
+Filters:
+https://docs.ansible.com/ansible/2.7/user_guide/playbooks_filters.html
+
+***** Ansible Playbooks, Creating and Executing ************
+
+using when clause with fact to filter what and where something needs to be installed.
+  - name: Install Epel
+      package:
+        name: epel-release
+        update_cache: yes
+        state: latest
+      when: ansible_distribution == 'CentOS'
+
+installing services or software on linux can be different for each distribution:
+Ubuntu is using apt, Centos -> dnf or yum.
+instead we can use package: module instead of those specific 
+package managers for each distribution.
+
+    - name: Install Nginx
+      package:
+        name: nginx
+        update_cache: yes
+        state: latest
+
+
+******** Ansible Playbooks, Deep Dive *********
+
+---------------------------------------------------
+++++++++ Ansible Playbook Modules ++++++++
+---------------------------------------------------
+
+set_fact, pause, prompt, wait_for, assemble, add_host, group_by, fetch
+
+1. set_fact:
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/set_fact_module.html
+
+This module allows you to dynamically add or change facts during execution.
+
+For example setting specific fact depending on the distribution we use:
+  tasks:
+    - name: Set our installation variables for CentOS
+      set_fact:
+        webserver_application_port: 80
+        webserver_application_path: /usr/share/nginx/html
+        webserver_application_user: root
+      when: ansible_distribution == 'CentOS'
+
+    - name: Set our installation variables for Ubuntu
+      set_fact:
+        webserver_application_port: 8080
+        webserver_application_path: /var/www/html
+        webserver_application_user: nginx
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Show pre-set distribution based facts
+      debug:
+        msg: "webserver_application_port:{{ webserver_application_port }} webserver_application_path:{{ webserver_application_path }} webserver_application_user:{{ webserver_application_user }}"
+
+2. Pause:
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/pause_module.html
+
+It allows us to pause playbook execution for a given period.
+It also allows us to do other things such as pausing until a specific 
+prompt is acknowledged
+
+shutdown service using ansible:
+ansible centos3 -m service -a "name=nginx state=stopped"
+
+we can run ansible-playbook as background task using '&'
+ansible-playbook wait_for_playbook.yaml &
+
+we can test wait module for port 80.
+--------------------------
+ wait_for:
+        port: 80
+--------------------------
+When we stop nginx service: 
+ansible centos3 -m service -a "name=nginx state=stopped"
+
+run Ansible playbook as background so we can start again the service
+once the playbook is running:
+ansible-playbook wait_for_playbook.yaml &
+
+and after that starting the service:
+ansible centos3 -m service -a "name=nginx state=started"
+
+after port 80 is available the ansible-playbook will finish successfully.
+
+3. Assemble
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assemble_module.html
+
+When scaling on multiple systems, we may also have configuration
+files that become exceptionally large
+
+For example files that we have 1 entry for each server that ansible is managing.
+We may prefer to separate our configuration into files for each
+particular system.
+This is where the assemble module comes in.
+It allows a collection of files to be assembled into one file.
+
+    - name: Assemble conf.d to sshd_config
+      assemble:
+        src: conf.d
+        dest: sshd_config
+
+ssh -F sshd_config centos1 -> we can ssh to the specific host
+using the config file we assembled.
+
+4.Add Host:
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/add_host_module.html
+
+This module allows us to dynamically add hosts to our playbooks 
+for subsequent plays.
+
+When using multiple plays we usually use '-' while listing the hosts entry:
+Both approaches are valid YAML
+----------------------------------------------
+- hosts: ubuntu-c
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Add centos1 to adhoc_group
+      add_host:
+        name: centos1
+        groups: adhoc_group1, adhoc_group2
+
+- hosts: adhoc_group1
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Ping all in adhoc_group1
+      ping:
+----------------------------------------------
+
+5. Group_by:
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/group_by_module.html
+
+Allows us to add hosts to a group based on a key that is received from facts.
+
+  tasks:
+    - name: Create group based on ansible_distribution
+      group_by:
+        key: "custom_{{ ansible_distribution | lower }}"
+
+
+6. Fetch
+https://docs.ansible.com/ansible/latest/collections/ansible/builtin/fetch_module.html
+
+Allows us to capture files from remote host.
+
+  tasks:
+    - name: Fetch /etc/redhat-release
+      fetch:
+        src: /etc/redhat-release
+        dest: /tmp/redhat-release
+
+
+it will create sub folder on the main ansible host:/tmp/redhat-release
+containing folder of each host that it runs on.
+
+ansible@ubuntu-c:~/11$ ls /tmp/redhat-release/
+centos1  centos2  centos3
+
+ansible@ubuntu-c:~/11$ cat /tmp/redhat-release/centos1/etc/redhat-release 
+CentOS Linux release 8.4.2105
+
+---------------------------------------------------
+++++++++ Ansible Dynamic Inventories ++++++++
+---------------------------------------------------
+
+An inventory can be specified or overriden on the command line using -i
+if the file is executable Ansible will use it as Dynamic Inventory.
+It will execute the file and will use the return content as inventory.
+
+1. Key requirements for Dynamic inventory:
+- needs to be executable file.
+- accepts the command line options of --list and --host hostname
+- returns a JSON encoded dictionary of inventory content when used with --list
+- returns a basic JSON encoded dictionary structure for --host hostname
+
+Create dynamic inventory in python called inventory.py
+./inventory.py --list
+./inventory.py --host centos1 -> to see details for centos host.
+ansible all -i inventory.py --list-hosts -> list all hosts from the inventory.
+ansible all -i inventory.py -m ping -o -> ping all hosts.
+
+tail -f /var/tmp/ansible_dynamic_inventory.log & -> run on background
+
+if  Inventory(include_hostvars_in_list=True) is true,
+it makes the hostvar info part of the list output under
+a key called _meta.
+ jobs -> running backgrounds
+ kill {the job we want to kill}
+
+---------------------------------------------------
+++++++++ Ansible Register and When +++++++++
+---------------------------------------------------
+
+1. Command Module - which is default if no module is provided.
+ansible all -a 'hostname -s' -o -> standard output for each host.
+
+Same command can be used in playbook like below:
+
+  tasks:
+    - name: Exploring register
+      command: hostname -s
+      register: hostname_output
+
+This will register a change for each host but there will be no standard output.
+This is where register comes into play.
+We can define a variable where we can register context from the executed module.
+
+We can use the information from the register by accessing it like this:
+In the tasks:
+ - name: Show hostname_output
+   debug:
+      var: hostname_output
+
+This will provide us with JSONs with a lot of info.
+executed command with params, start&end times, 
+status code/return code {rc} -> 0 success / 1 fail,
+standard error {stderr}, stdout, 
+stdout_lines {stdout but with list of entries}
+
+- name: Show hostname_output
+  debug:
+    var: hostname_output.stdout
+
+We can call the var with (.) from the register.
+
+Using Jinja2 syntax without {{}}, we can include when condition 
+for specific tasks:
+  tasks:
+    - name: Exploring register
+      command: hostname -s
+      when: ansible_distribution == "CentOS" and ansible_distribution_major_version == "8"
+
+Lets have a look at the facts for ubuntu1:
+ansible ubuntu1 -m setup -a filter='ansible_distribution*'
+
+ubuntu1 | SUCCESS => {
+    "ansible_facts": {
+        "ansible_distribution": "Ubuntu",
+        "ansible_distribution_file_parsed": true,
+        "ansible_distribution_file_path": "/etc/os-release",
+        "ansible_distribution_file_variety": "Debian",
+        "ansible_distribution_major_version": "22",
+        "ansible_distribution_release": "jammy",
+        "ansible_distribution_version": "22.04",
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false
+}
+
+We gonna use 'ansible_distribution' and ansible_distribution_major_version
+for second condition:
+tasks:
+  - name: Exploring register
+    command: hostname -s
+    when: ( ansible_distribution == "CentOS" and ansible_distribution_major_version == "8" ) or
+          ( ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "22" )
+
+If we want our when condition to match equal or higher version of versions 
+for some OS we use this:
+
+tasks:
+  - name: Exploring register
+    command: hostname -s
+    when: ( ansible_distribution == "CentOS" and ansible_distribution_major_version | int >= 8 ) or
+          ( ansible_distribution == "Ubuntu" and ansible_distribution_major_version | int >= 22 )
+
+If we are working with AND statements we can also use the following syntax:
+Use List and this automatically converts to AND:
+tasks:
+  - name: Exploring register
+    command: hostname -s
+    when: 
+      - ansible_distribution == "CentOS" 
+      - ansible_distribution_major_version | int >= 8
+
+Its useful to combine register output with 'when'
+
+tasks:
+  - name: Exploring register
+    command: hostname -s
+    when: 
+      - ansible_distribution == "CentOS" 
+      - ansible_distribution_major_version | int >= 8
+    register: command_register
+
+  - name: Show register
+    debug:
+      var: command_register
+
+This will give us additional JSON info for each host
+where skipped = true for hosts that are not matching the condition
+and info for those who are within the brackets:
+
+When using register, the output on a module can vary
+We will use the KEY changed, because it's always there:
+
+tasks:
+  - name: Exploring register
+    command: hostname -s
+    when: 
+      - ansible_distribution == "CentOS" 
+      - ansible_distribution_major_version | int >= 8
+    register: command_register
+
+  - name: Install patch when changed
+    yum:
+      name: patch
+      state: present
+    when: command_register.changed
+
+Above we are using conditional when, where the "command_register.changed"
+is TRUE.
+If this is true it's going to install patch pagacke on that system.
+
+We can also say it like this:
+- name: Install patch when changed
+  yum:
+    name: patch
+    state: present
+  when: command_register is changed
+
+We can also install by using the opposite logic:
+- name: Install patch when skipped
+  apt:
+    name: patch
+    state: present
+  when: command_register is skipped
+
+---------------------------------------------------
+++++++++ Looping ++++++++
+---------------------------------------------------
+
+Looping functionality in ansible.
+There are a lot of options that we can use in our playbooks.
+All of them start witi 'with_' :
+- with_items,
+- with_dict, 
+- with_subelements, 
+- with_together, 
+- with_sequence,
+- many other loops .. with_random_choice,
+- until
+
+********** 1 **********
+*item variable is used for the value of each loop iteration:
+tasks:
+  - name: Configure a MOTD (message of the day)
+    copy:
+      content: "Welcome to {{ item }} Linux - Ansible Rocks!\n"
+      dest: /etc/motd
+    notify: MOTD changed
+    with_items: [ 'CentOS', 'Ubuntu' ]
+    when: ansible_distribution == item
+
+We can also run the following syntax:
+tasks:
+  - name: Configure a MOTD (message of the day)
+    copy:
+      content: "Welcome to {{ item }} Linux - Ansible Rocks!\n"
+      dest: /etc/motd
+    notify: MOTD changed
+    with_items: 
+      - CentOS
+      - Ubuntu
+    when: ansible_distribution == item
+
+********** 2 **********
+The 'with_items' is very useful when we have tasks
+where we need to perform the same action for a variety of users.
+
+For example creating users:
+Using user module will allow us to add unix accounts
+to our systems.
+
+tasks:
+  - name: Creating user
+    user:
+      name: "{{ item }}"
+    with_items: 
+      - james
+      - hayley
+      - lily
+      - anwen
+
+ssh centos3 tail -5 /etc/passwd
+
+Remove users by using state:absent
+tasks:
+  - name: Removing user
+    user:
+      name: "{{ item }}"
+      state: absent
+    with_items: 
+      - james
+      - hayley
+      - lily
+      - anwen
+
+Creating again user by adding comment:
+  tasks:
+    - name: Creating user
+      user:
+        name: "{{ item.key }}"
+        state: present
+        comment: "{{ item.value.full_name }}"
+      with_dict: 
+        james: 
+          full_name: James Spurin
+        hayley: 
+          full_name: Hayley Spurin
+        lily: 
+          full_name: Lily Spurin
+        anwen:
+          full_name: Anwen Spurin
+
+ssh centos3 tail -5 /etc/passwd
+
+By using with_subelements we can play around in more flexible
+manner.
+
+
+Jinja 2 template -> title will give us First letter as upper
+within the list of members.
+tasks:
+  - name: Creating user
+    user:
+      name: "{{ item.1 }}"
+      comment: "{{ item.1 | title }} {{ item.0.surname }}"
+    with_subelements: 
+      - family:
+          surname: Spurin
+          members:
+            - james
+            - hayley
+            - lily
+            - anwen
+      - members
+
+We can expand the approach above for more users:
+with_subelements can accept list of dictionaries.
+We can remove the family key and add each family as a dictionary
+in the list:
+tasks:
+  - name: Creating user
+    user:
+      name: "{{ item.1 }}"
+      comment: "{{ item.1 | title }} {{ item.0.surname }}"
+    with_subelements: 
+      - 
+        - surname: Spurin
+          members:
+            - james
+            - hayley
+            - lily
+            - anwen
+        - surname: Darlington
+          members:
+            - freya
+        - surname: Jalba
+          members:
+            - ana
+        - surname: Angne
+          members:
+            - abhishek
+        - surname: Mahmood
+          members:
+            - sara
+      - members
+
+With this non of the users has password,
+we can confirm this by looking at the /etc/shadow
+
+ssh root@centos3 tail -8 /etc/shadow
+
+We can set passwords using user module.
+
+with 'dev/null' we basically save those password into a black hole and
+it is not saved anywhere, because we won't use them.
+tasks:
+  - name: Creating user
+    user:
+      name: "{{ item.1 }}"
+      comment: "{{ item.1 | title }} {{ item.0.surname }}"
+      # https://docs.ansible.com/ansible/latest/plugins/lookup/password.html
+      password: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters,digits,hexdigits,punctuation') | password_hash('sha512') }}"
+    with_subelements:
+      -
+        - surname: Spurin
+          members:
+            - james
+            - hayley
+            - lily
+            - anwen
+        - surname: Darlington
+          members:
+            - freya
+        - surname: Jalba
+          members:
+            - ana
+        - surname: Angne
+          members:
+            - abhishek
+        - surname: Mahmood
+          members:
+            - sara
+      - members
+
+
+We can check again for their hash for password:
+ ssh root@centos3 tail -8 /etc/shadow
+
+Let see how we can use other types of loops 
+for configuration purposes:
+if we ever create user on Windows or Mac there is often some
+common directories by default.
+
+tasks:
+  - name: Creating user directories
+    file:
+      dest: "/home/{{ item.0 }}/{{ item.1 }}"
+      owner: "{{ item.0 }}"
+      group: "{{ item.0 }}"
+      state: directory
+    with_nested:
+      - [ james, hayley, freya, lily, anwen, ana, abhishek, sara ]
+      - [ photos, movies, documents ]
+
+'with_nested' loop -> for each of these do each of these.
+checking with -> ssh centos3 -l root ls -altr /home/james
+
+if we want to loop with sets of data, we can use 'with_together'
+loop: ( basically 0 with 0, 1 with 1, 2 with 2 for each of the lists).
+tasks:
+  - name: Creating user directories
+    file:
+      dest: "/home/{{ item.0 }}/{{ item.1 }}"
+      owner: "{{ item.0 }}"
+      group: "{{ item.0 }}"
+      state: directory
+    with_together:
+      - [ james, hayley, freya, lily, anwen, ana, abhishek, sara ]
+      - [ tech, psychology, acting, dancing, playing, japanese, coffee, music ]
+
+
+using 'with_file' loop, which allows us to use file content in loops.
+using 'authorize_key' module which will add ssh keys.
+We are going to add our current user's public key to user's authorized keys
+file, with_file will take the content of this file and will pass it as
+variable - item.
+
+** take ansible's public key and add it into james' account. 
+for each host **
+
+tasks:
+  - name: Create authorized key
+    authorized_key:
+      user: james
+      key: "{{ item }}"
+    with_file:
+      - /home/ansible/.ssh/id_rsa.pub
+
+Now we are able to access each system with james
+as ansible user is able: ssh centos3 -l james
+
+This example can be used with multiple keys.
+ssh-keygen -f custom_key -> gen new key at the current location.
+
+tasks:
+  - name: Create authorized key
+    authorized_key:
+      user: james
+      key: "{{ item }}"
+    with_file:
+      - /home/ansible/.ssh/id_rsa.pub
+      - custom_key.pub
+
+now we can also connect with our custom key:
+ssh -i custom_key centos3 -l james
+
+directory_sequence -> ansible has with_sequence loop that can be 
+useful in certain scenarios:
+syntax is key: value entry
+
+creating directories from 0 to 100 with skip intervals of 10.
+tasks:
+  - name: Create sequence directories
+    file:
+      dest: "/home/james/sequence_{{ item }}"
+      state: directory
+    with_sequence: start=0 end=100 stride=10
+
+ssh centos3 -l root ls -altr /home/james -> the owner will
+be the root user because it's created from root in ansible.
+
+We can use formatting as printf statements
+tasks:
+  - name: Create sequence directories
+    file:
+      dest: "{{ item }}"
+      state: directory
+    with_sequence: start=0 end=100 stride=10 format=/home/james/sequence_%d
+
+Another option for hex values:
+tasks:
+  - name: Create hex sequence directories
+    file:
+      dest: "{{ item }}"
+      state: directory
+    with_sequence: start=0 end=16 stride=1 format=/home/james/hex_sequence_%x
+
+ssh centos3 -l root ls -altr /home/james
+
+next we are telling it to count from 1 to 5:
+tasks:
+  - name: Create hex sequence directories
+    file:
+      dest: "{{ item }}"
+      state: directory
+    with_sequence: count=5 format=/home/james/count_sequence_%x
+
+with_random_choice:
+tasks:
+  - name: Create random directory
+    file:
+      dest: "/home/james/{{ item }}"
+      state: directory
+    with_random_choice:
+      - "google"
+      - "facebook"
+      - "microsoft"
+      - "apple"
+
+Last Loop - until:
+We have a script that gives us random number from 1 to 10.
+We are giving 100 attempts range for each host until hits 10.
+tasks:
+  - name: Run a script until we hit 10
+    script: random.sh
+    register: result
+    retries: 100
+    until: result.stdout.find("10") != -1
+    # n.b. the default delay is 5 seconds
+    delay: 1
+
+---------------------------------------------------
+++++++++ Asynchronous, Serial, Parallel ++++++++
+---------------------------------------------------
+
+Playbook performance and bottlenecks,
+Polling,
+Asynchronous job identifiers,
+Asynchronous status handling,
+Serial execution,
+Batch execution,
+Alternative strategies to facilitate Parallel execution.
+
+Performance aspects of Ansible, and how we can improve performance 
+through some of the features built into Ansible:
+
+Slow playbook:
+--------------------------
+tasks:
+    - name: Task 1
+      command: /bin/sleep 5
+
+    - name: Task 2
+      command: /bin/sleep 5
+
+    - name: Task 3
+      command: /bin/sleep 5
+
+--------------------------
+
+Slow playbook first improvement:
+tasks:
+    - name: Task 1
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos1'
+
+    - name: Task 2
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos2'
+
+    - name: Task 3
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos3'
+
+--------------------------
+Ansyble support for async task execution, which is useful for long-running
+tasks where you don't want ssh connections to stay open or
+the task to exceed the ssh timeout.
+Essentially we can run the task and then we can poll later on for the status:
+poll:1 means we poll for status every 1 sec after 10 sec period set with async.
+--------------------------
+ tasks:
+    - name: Task 1
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos1'
+      async: 10
+      poll: 1
+
+    - name: Task 2
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos2'
+      async: 10
+      poll: 1
+
+    - name: Task 3
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos3'
+      async: 10
+      poll: 1
+--------------------------
+We set poll value to 0, which means fire and forget
+--------------------------
+tasks:
+    - name: Task 1
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos1'
+      async: 10
+      poll: 0
+
+    - name: Task 2
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos2'
+      async: 10
+      poll: 0
+--------------------------
+check background tasks that are executing after the playbook:
+ps -ef | grep ssh -> for tasks that are still running
+We can see that even if the playbook finishes with success we are
+still having processes running, which give us room for improvement:
+using register in the context from the asynchronous command,
+and we are showing this using the debug module
+--------------------------
+tasks:
+    - name: Task 1
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos1'
+      async: 10
+      poll: 0
+      register: result1
+
+    - name: Task 2
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos2'
+      async: 10
+      poll: 0
+      register: result2
+  
+   - name: Show registered context
+      debug:
+        var: result1
+
+    - name: Show registered context as jinja2
+      debug:
+        msg: "{{ result1 }}"
+--------------------------
+In the successful execution we can find : ansible_job_id,
+the async module uses this as input for gathering the 
+status on a job.
+
+result1 will be printed just once for the first task,
+counting also the skipped ones.
+
+--------------------------
+# Vars: variables that will apply to the play, on all target systems
+vars:
+  jobids: []
+
+tasks:
+    - name: Task 1
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos1'
+      async: 10
+      poll: 0
+      register: result1
+
+    - name: Task 2
+      command: /bin/sleep 5
+      when: ansible_hostname == 'centos2'
+      async: 10
+      poll: 0
+      register: result2
+      
+      ...
+      
+    - name: Capture Job IDs
+    set_fact:
+      jobids: >
+              {% if item.ansible_job_id is defined -%}
+                {{ jobids + [item.ansible_job_id] }}
+              {% else -%}
+                {{ jobids }}
+              {% endif %}
+    with_items: "{{ [ result1, result2, result3, result4, result5, result6 ] }}"
+
+    - name: Show Job IDs
+      debug:
+        var: jobids
+--------------------------
+Now after we have the background process ids,
+what we are going to use is the asynchronous status module so that we can
+wait for all background jobs to complete:
+
+With this module we are passing the job ids, registering the output in jobs_result 
+and we are waiting for jobs_result.finish, retrying it 30 times.
+
+Basically grabbing job id and printing it after it finishes as background process.
+--------------------------
+    - name: 'Wait for Job IDs'
+      async_status:
+         jid: "{{ item }}"
+      with_items: "{{ jobids }}"
+      register: jobs_result
+      until: jobs_result.finished
+      retries: 30
+
+--------------------------
+
+next step we are removing when: steps, so it will run agains every host
+and we will put a timer on to actually see how it does.
+
+By default Ansible uses the linear strategy.
+It also can use another default with five forks,
+but because we have 6 hosts it will run first 5 hosts for 5 seconds
+and after that going for the sixth host for another 5 seconds,
+which extends the time in total over 10s per task.
+
+We can change the fork system by adding forks=6 in the ansible.cfg
+
+** Serial **
+--------------------------
+  hosts: linux
+  gather_facts: false
+  serial: 2
+
+  tasks:
+  ...
+--------------------------
+
+serial shows how many hosts at a time we will run the playbook.
+In that case we will limit the batch size when we are installing something.
+Basically every batch with 2 hosts will go through the tasks,
+after that another batch will go through the tasks etc.
+
+We can specify Serial as list, which will allow us to batch in 
+incremental stages.
+
+first tasks will be executed against just 1 host, second wave of tasks
+will be executed on 2 hosts, third wave - 3 hosts.
+
+--------------------------
+  hosts: linux
+  gather_facts: false
+  serial: 
+    - 1
+    - 2
+    - 3
+
+--------------------------
+
+If we are working with large number of hosts or our variants of hosts
+is likely to change we can use percentage:
+--------------------------
+  hosts: linux
+  gather_facts: false
+  serial: 
+    - 16%
+    - 34%
+    - 50%
+--------------------------
+
+** Free strategy **
+
+We have tasks that will sleep in random seconds up to 10s.
+--------------------------
+  tasks:
+    - name: Task 1
+      command: "/bin/sleep {{ 10 |random}}"
+
+    - name: Task 2
+      command: "/bin/sleep {{ 10 |random}}"
+--------------------------
+ We are just adding strategy: free within the playbook:
+
+  hosts: linux
+  gather_facts: false
+  strategy: free
+
+We are no longer waiting for task to finish before moving on to the next task.
+
+---------------------------------------------------
+++++++++ Task Delegation ++++++++
+---------------------------------------------------
+
+
+How we can delegate specific tasks for execution on specific targets.
+
+We will target our host, Ubuntu3 and through the use of TCP Wrappers, we will
+restrict SSH access so that it only works from ubuntu-c, dentos1 and ubuntu1.
+
+We have 3 plays:
+
+--------------------------------------------------------
+  # Hosts: where our play will run and options it will run with
+  hosts: ubuntu-c
+  gather_facts: False
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Generate an OpenSSH keypair for ubuntu3
+      openssh_keypair:
+        path: ~/.ssh/ubuntu3_id_rsa
+--------------------------------------------------------
+  # Hosts: where our play will run and options it will run with
+  hosts: linux
+  gather_facts: False
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Copy ubuntu3 OpenSSH keypair with permissions
+      copy:
+        owner: root
+        src: "{{ item.0 }}"
+        dest: "{{ item.0 }}"
+        mode: "{{ item.1 }}"
+      with_together:
+        - [ ~/.ssh/ubuntu3_id_rsa, ~/.ssh/ubuntu3_id_rsa.pub ]
+        - [ "0600", "0644" ]
+--------------------------------------------------------
+  # Hosts: where our play will run and options it will run with
+  hosts: ubuntu3
+  gather_facts: False
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Add public key to the ubuntu3 authorized_keys file
+      authorized_key:
+        user: root
+        state: present
+        key: "{{ lookup('file', '~/.ssh/ubuntu3_id_rsa.pub') }}"
+--------------------------------------------------------
+
+**************** 2 ********************
+Additional task that will verify ubuntu3 can use ssh tool
+--------------------------------------------------------
+  # Hosts: where our play will run and options it will run with
+  hosts: all
+  gather_facts: False
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Check that ssh can connect to ubuntu3 using the ssh tool
+      command: ssh -i ~/.ssh/ubuntu3_id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@ubuntu3 date
+      changed_when: False
+      ignore_errors: True
+
+--------------------------------------------------------
+
+**************** 3 ********************
+We have 2 new plays:
+1.We are using delegate_to which is the main focus of this 'task_delegation'
+Basically gathering facts on our hosts ubuntu-c, centos1 and ubuntu1
+then telling to add line in /etc/hosts.allow for each host to ubuntu3.
+--------------------------------------------------------
+ # Hosts: where our play will run and options it will run with
+  hosts: ubuntu-c, centos1, ubuntu1
+  # Serial is important as we are writing to a single file
+  serial: 1
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Add host to /etc/hosts.allow for sshd
+      lineinfile:
+        path: /etc/hosts.allow
+        line: "sshd: {{ ansible_hostname }}.diveinto.io"
+        create: True
+      delegate_to: ubuntu3
+
+--------------------------------------------------------
+2.Check again if we are able to ssh.
+
+
+  # Hosts: where our play will run and options it will run with
+  hosts: all
+  gather_facts: False
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Check that ssh can connect to ubuntu3 using the ssh tool
+      command: ssh -i ~/.ssh/ubuntu3_id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@ubuntu3 date
+      changed_when: False
+      ignore_errors: True
+
+--------------------------------------------------------
+**************** 4 ********************
+
+We have two new plays:
+
+1.We are adding deny hosts for all in /etc/hosts.deny
+if the host isnt in the allow file it's going to be rejected.
+--------------------------------------------------------
+  # Hosts: where our play will run and options it will run with
+  hosts: ubuntu3
+  gather_facts: False
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Drop SSH connectivity from everywhere else
+      lineinfile:
+        path: /etc/hosts.deny
+        line: "sshd: ALL"
+        create: True
+
+--------------------------------------------------------
+2.Rerun the ssh check.
+This will be successful only for:
+ok: [ubuntu-c]
+ok: [centos1]
+ok: [ubuntu1]
+
+which are already added in the host.allow file.
+other will be failing and will be ignored.
+centos2, centos3, ubuntu2 will fail and will be ignored.
+--------------------------------------------------------
+  # Hosts: where our play will run and options it will run with
+  hosts: all
+  gather_facts: False
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Check that ssh can connect to ubuntu3 using the ssh tool
+      command: ssh -i ~/.ssh/ubuntu3_id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@ubuntu3 date
+      changed_when: False
+      ignore_errors: True
+--------------------------------------------------------
+
+**************** 5 ********************
+We have 2 new plays: -> clean up crew
+1.remove hosts from allow file 
+--------------------------------------------------------
+  # Hosts: where our play will run and options it will run with
+  hosts: ubuntu-c, centos1, ubuntu1
+  # Serial is important as we are writing to a single file
+  serial: 1
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Remove specific host entries in /etc/hosts.allow for sshd
+      lineinfile:
+        path: /etc/hosts.allow
+        line: "sshd: {{ ansible_hostname }}.diveinto.io"
+        state: absent
+      delegate_to: ubuntu3
+--------------------------------------------------------
+2.remove host from deny
+--------------------------------------------------------
+
+  # Hosts: where our play will run and options it will run with
+  hosts: ubuntu3
+  gather_facts: False
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+    - name: Allow SSH connectivity from everywhere
+      lineinfile:
+        path: /etc/hosts.deny
+        line: "sshd: ALL"
+        state: absent
+
+---------------------------------------------------
+++++++++ Magic Variables +++++++++
+---------------------------------------------------
+
+
+https://docs.ansible.com/ansible/latest/reference_appendices/special_variables.html
+
+These variables cannot be set directly by the user; 
+Ansible will always override them to reflect internal state.
+
+We can have the following playbook so we can capture all hosts and their vars.
+save them and fetch the information on the controller.
+
+--------------------------------------------------------
+# Hosts: where our play will run and options it will run with
+hosts: all
+
+# Tasks: the list of tasks that will be executed within the play, this section
+# can also be used for pre and post tasks
+tasks:
+  - name: Using template, create a remote file that contains all variables available to the play
+    template:
+      src: templates/dump_variables
+      dest: /tmp/ansible_variables
+
+  - name: Fetch the templated file with all variables, back to the control host
+    fetch:
+      src: /tmp/ansible_variables
+      dest: "captured_variables/{{ ansible_hostname }}"
+      flat: yes
+
+  - name: Clean up left over files
+    file: 
+      name: /tmp/ansible_variables
+      state: absent
+
+--------------------------------------------------------
+
+vim /captured_variables/centos1
+/hostvars -> we can look into host vars there.
+/groups, /group_names, /inventory_hostname, /inventory_dir
+
+We can have this as reference when we need to use facts and are not sure which ones we actually
+need to reference.
+
+---------------------------------------------------
+++++++++ Blocks +++++++++
+---------------------------------------------------
+
+Blocks are feature that was added to ansible 2.
+- Allow us to group multiple tasks into a single block.
+- Rescue, Always -> error handling;
+
+The block accepts a list of executions:
+--------------------------------------------------------
+ tasks:
+    - name: A block of modules being executed
+      block:
+        - name: Example 1
+          debug:
+            msg: Example 1
+
+        - name: Example 2
+          debug:
+            msg: Example 2
+
+        - name: Example 3
+          debug:
+            msg: Example 3
+
+--------------------------------------------------------
+
+this will run all hosts for each example.
+
+**************** 2 ********************
+
+We can use 'when' and 'with_items' also within the block structure:
+
+--------------------------------------------------------
+- name: A block of modules being executed
+      block:
+        - name: Example 1 CentOS only
+          debug:
+            msg: Example 1 CentOS only
+          when: ansible_distribution == 'CentOS'
+
+        - name: Example 2 Ubuntu only
+          debug:
+            msg: Example 2 Ubuntu only
+          when: ansible_distribution == 'Ubuntu'
+
+        - name: Example 3 with items
+          debug:
+            msg: "Example 3 with items - {{ item }}"
+          with_items: ['x', 'y', 'z'] 
+
+--------------------------------------------------------
+
+ with_items: ['x', 'y', 'z'] -> will run 3 times for each host.
+
+Blocking allows us to track issues the same way as it is within the programming
+we use try-catch blocks.
+
+Next example we try to install python package - dns available only for ubuntu, and not centos.
+
+--------------------------------------------------------
+---
+# YAML documents begin with the document separator ---
+
+# The minus in YAML this indicates a list item.  The playbook contains a list
+# of plays, with each play being a dictionary
+-
+
+  # Hosts: where our play will run and options it will run with
+  hosts: linux
+
+  # Tasks: the list of tasks that will be executed within the play, this section
+  # can also be used for pre and post tasks
+  tasks:
+
+    - name: Install patch and python-dns
+      block:
+        - name: Install patch
+          package:
+            name: patch
+
+        - name: Install python3-dnspython
+          package:
+            name: python3-dnspython
+
+      rescue:
+        - name: Rollback patch
+          package:
+            name: patch
+            state: absent
+
+        - name: Rollback python3-dnspython
+          package:
+            name: python3-dnspython
+            state: absent
+
+      always:
+        - debug:
+            msg: This always runs, regardless
+
+# Three dots indicate the end of a YAML document
+...
+
+
+
+---------------------------------------------------
+++++++++ Vault +++++++++
+---------------------------------------------------
+Encrypting / Decrypting Variables
+Encrypting and Decrypting Files
+Re-Encrypting Data
+Using Multiple Vaults
+
+Ansible Vault е инструмент,
+който позволява на потребителите да съхраняват и управляват чувствителни данни,
+като пароли или ключове за достъп, директно в своите Ansible плейбуци. 
+Vault криптира тези данни, така че те да могат да бъдат безопасно съхранявани и споделяни. 
+Това е особено полезно в ситуации, където сигурността на информацията е критична.
+
+1.Creating a New Vault File: 
+- ansible-vault create <filename>
+
+2.Encrypting an Existing File: 
+- ansible-vault encrypt <filename>
+
+3.Decrypting a Vault File: 
+- ansible-vault decrypt <filename>
+
+4.Editing a Vault File: 
+- ansible-vault edit <filename>
+
+5.Rekeying (Changing the Password) of a Vault File: 
+- ansible-vault rekey <filename>
+
+6.Encrypting Strings in Playbooks: 
+- ansible-vault encrypt_string '<string>'
+
+7.View Encrypted Data: 
+- ansible-vault view <filename>
+
+8.Running Playbooks with Encrypted Data: 
+- ansible-playbook <playbook.yml> --ask-vault-pass
+
+9.Specify a Vault Password File: 
+- ansible-playbook <playbook.yml> --vault-password-file <password-file>
+
+10.Encrypting Files with Multiple Vault IDs: 
+- ansible-vault encrypt --vault-id <id>@prompt <filename>
+
+
+ansible-vault encrypt_string --ask-vault-pass --name 'ansible_become_pass' 'password'
+** set 'vaultpass' for password
+
+copy the output and set it to our groupvars file.
+ansible --ask-vault-pass ubuntu -m ping -o
+** vaultpass 
+
+cat external_vault_vars.yaml.
+'external_vault_var: Example External Vault var'
+
+encrypt the file:
+ansible-vault encrypt external_vault_vars.yaml
+** vaultpass
+
+Когато използваме криптирания файл в ансибъл плейбука, не е необходимо да казваме,
+че файлът е криптиран, защото това е автоматизиран процес част от Ансибъл.
+
+Когато изпълняваме плейбука, също е необходимо да използваме --ask-vault-pass опцията,
+за да можем да зададем паролата за декриптирането на файла.
+
+ansible-playbook --ask-vault-pass vault_playbook.yaml
+
+decrypt the file:
+ansible-vault decrypt external_vault_vars.yaml
+** vaultpass
+
+ansible-vault rekey external_vault_vars.yaml
+** vaultpass -> vaultpass2
+
+ansible-vault view external_vault_vars.yaml
+** vaultpass2
+
+use file with password for vault:
+echo vaultpass2 > password_file
+ansible-vault view --vault-password-file password_file external_vault_vars.yaml
+
+another option to ask for password is using --vault-id with @prompt as param:
+** --vault-id [vaultname]@[filename|prompt] fileToRead **
+1.ansible-vault view --vault-id @prompt external_vault_vars.yaml 
+2.ansible-vault view --vault-id @password_file external_vault_vars.yaml 
+
+ansible-vault encrypt --vault-id vars@prompt external_vault_vars.yaml 
+** varspass / vault name is vars now
+
+cat external_vault_vars.yaml :" $ANSIBLE_VAULT;1.2;AES256;vars..." -> 'vars' is name of the vault
+
+another vault for variable ansible_become_pass
+ansible-vault encrypt_string --vault-id ssh@prompt --name 'ansible_become_pass' 'password'
+** sshpass
+
+Executing vault that rely on 2 vaults:
+ansible-playbook --vault-id vars@prompt --vault-id ssh@prompt vault_playbook.yaml 
+
+Encrypt the playbook as well with new vault - playbook:
+ansible-vault encrypt --vault-id playbook@prompt vault_playbook.yaml
+** playbookpass
+
+use 3 vaults to run playbook:
+ansible-playbook --vault-id vars@prompt --vault-id ssh@prompt --vault-id playbook@prompt vault_playbook.yaml 
+
+******** Structuring Ansible Playbooks ********
+---------------------------------------------------
+++++++++ Using Includes and Imports +++++++++
+---------------------------------------------------
+
+include_tasks / import_tasks
+** Import statements (Static)-> Pre-Processed at the time playbooks are passed.
+-> Parsing -> Execution.
+ - 'when' statement applies to all individual tasks at task point of execution.
+
+** Include Statements (Dynamic)-> Executed at point in the time -> execution 
+Processed as they are encountered during the execution of the playbook.
+ - 'when' statements applies to all tasks at initial point of execution.
+
+Когато използваме import и проверяваме за някакъв статус или променлива:
+Статусът се сетва при първото изпълнение на таск-а и не се променя до края на playbook-a.
+
+Когато използваме include и проверяваме за някакъв статус или променлива:
+Статусът се обновява преди всяко изпълнение, което дава гъвкавост в сценарии,
+когато очакваме различни стойности.
+
+
+---------------------------------------------------
+++++++++ Using Tags +++++++++
+---------------------------------------------------
+
+Таговете са полезни когато работим с огромни playbooks
+или playbooks, които включват в себе си други playbooks, където искаме 
+да изпълним част от конфигурацията на playbook-а, а не целият.
+
+tasks:
+  - name: Install EPEL
+    ...
+    tags:
+      - install-epel
+
+  - name: Install Nginx
+    ...
+    tags:
+      - install-nginx
+
+  - name: Restart nginx
+    ...
+    tags:
+      - restart-nginx
+
+Run Single Tag:
+ansible-playbook nginx_playbook.yaml --tags "install-epel"
+ansible-playbook nginx_playbook.yaml --tags "deploy-app"
+
+Run Multiple Tags:
+ansible-playbook nginx_playbook.yaml --tags "install-nginx,restart-nginx"
+
+Skiping tasks:
+ansible-playbook nginx_playbook.yaml --skip-tags "deploy-app"
+
+By default all tasks are assigned to the all tag:
+ansible-playbook nginx_playbook.yaml --tags "all"
+
+Също така е възможно да сложим таг на целия play:
+ hosts: linux
+  tags:
+    - webapp
+
+Това е полезно, когато имаме няколко play-a в 1 playbook.
+ansible-playbook nginx_playbook.yaml --tags "webapp"
+
+Когато използваме този play-tag, се променя и начина по който се изпълнява
+gather_facts task-a. 
+
+Когато добавите 'play tag' за изпълнение по този начин,
+това също променя задачата gather_facts,
+която по подразбиране би била маркирана с always, на етикета, който сте посочили.
+
+Пример:
+Когато изпълним командата за инсталиране на nginx, с локалния таг за таска,
+командата ще бъде изпълнена:
+ansible-playbook nginx_playbook.yaml --tags "install-nginx"
+
+Ако обаче изпълним същата команда в същия play, но без предварителна промяна,
+събирането на факти ще се пропусне, което може да е нещо, което не искаме ако 
+разчитаме на факт в дадения play за друг, който сме решили да изпълняваме.
+а.к.а събират се факти само на play-a който искаме да изпълним.
+
+Начин по който можем да митигираме нещата е да създадем празен play без тагове:
+В началото имаме прост play, който съдържа само хостовете:
+-
+  # Hosts: where our play will run and options it will run with
+  hosts: linux
+-
+
+Това ще подсигури, че fact_gather процеса ще се изпълни.
+
+Имаме и специфичен таг - always:
+- name: Restart nginx
+  ...
+  tags:
+    - always
+
+По този начин правим задачата - Restart nginx задължителна.
+Можем да пропуснем 'always' тага, като използваме --skip-tags опцията:
+ansible-playbook nginx_playbook.yaml --tags "install-nginx" --skip-tags "always"
+
+Има още специални тагове, които можем да използваме, НО извън playbook-a.
+* tagged - само таскове, които имат таг, ще бъдат изпълнени;
+ansible-playbook nginx_playbook.yaml --tags "tagged"
+* untagged - само таскове, които нямат таг (always, спада в )
+ansible-playbook nginx_playbook.yaml --tags "untagged"
+* all - В Ansible, тагът all се използва за изпълнение на всички задачи в плейбук или роля.
+Той не е специфичен етикет, който трябва да се задава на задачи,
+а по-скоро е начин да се каже на Ansible да изпълни всички задачи,
+независимо дали те имат други тагове или не.
+
+Когато използвате командата ansible-playbook с опцията --tags all,
+Ansible изпълнява всички задачи в плейбука, без да филтрира по конкретен етикет.
+Това е полезно, ако искате да стартирате всички задачи, дори и ако те са били етикетирани 
+с други специфични тагове.
+
+ansible-playbook nginx_playbook.yaml --tags "all"
+
+Таговете могат да бъдат използвани при includes и imports
+където всеки таск, който е 'included' или 'imported' или
+всеки плейбук, който е 'imported' ще наследи предоставените тагове.
+-------------------------
+  tasks:
+
+    - include_tasks: include_tasks.yaml
+      tags:
+        - include_tasks
+
+    - import_tasks: import_tasks.yaml
+      tags:
+        - import_tasks
+
+- import_playbook: import_playbook.yaml
+  tags:
+    - import_playbook
+-------------------------
+Изпълняваме всеки таг по отделно, като използваме for loop:
+for tag in include_tasks import_tasks import_playbook; do echo =========== Testing ${tag} ===========; ansible-playbook include_import_playbook.yaml --tag "${tag}"; done
+
+
+---------------------------------------------------
+++++++++ Roles +++++++++
+---------------------------------------------------
+
+Ролите в Ansible се използват за:
+1.Повторно използване на код: Модулни компоненти, които могат да се използват многократно.
+2.Организация и структура: Подредба на файловете и задачите.
+3.Изолация: Лесно управление на отделни части на конфигурацията.
+4.Четимост и поддръжка: Подобрена разбираемост на кода.
+5.Споделяне: Лесно споделяне на роли чрез хранилища като Ansible Galaxy.
+6.Управление на зависимости: Лесно управление на сложни зависимости.
+
+Ролите в Ansible следват определена структура от директории и файлове,
+която улеснява организирането и управлението на задачите, 
+конфигурационните файлове и шаблоните:
+
+my_role/
+├── defaults/
+│   └── main.yml
+├── files/
+│   └── ...
+├── handlers/
+│   └── main.yml
+├── meta/
+│   └── main.yml
+├── tasks/
+│   └── main.yml
+├── templates/
+│   └── ...
+├── tests/
+│   └── ...
+├── vars/
+    └── main.yml
+
+Кратко описание на всяка директория:
+
+- defaults/: Съдържа файлове с променливи по подразбиране, които могат да се презапишат.
+- files/: Съдържа статични файлове, които могат да бъдат копирани на отдалечени машини.
+- handlers/: Определя хендлери, които се стартират при определени условия, 
+например рестартиране на услуга.
+- meta/: Съдържа метаданни за ролята, като например зависимости от други роли.
+- tasks/: Съдържа основния плейбук на ролята, в който се описват задачите.
+- templates/: Съдържа шаблони, които се използват за генериране на конфигурационни файлове.
+- tests/: Съдържа плейбуци и други тестови файлове за тестване на ролята.
+- vars/: Съдържа файлове с променливи, които не могат да се презаписват,
+като обикновено се използват за настройки.
+
+Тази структура помага за ясното разделяне и организиране на различните компоненти на конфигурацията,
+правейки ролите лесни за разбиране и поддръжка.
+
+** find . -> show us the folder structure where we are.
+
+ansible-galaxy init nginx
+find nginx
+
+vim nginx_playbook.yaml nginx/handlers/main.yml 
+mv templates/* nginx/templates/
+mv files/* nginx/files/
+rm -rf files/
+cat vars/logos.yaml >> nginx/vars/main.yml
+rm -rf vars/
+
+:1,$s/^    //g -> clearing tabs
+
+    - name: Install EPEL
+      yum:
+        name: epel-release
+        update_cache: yes
+        state: latest
+      when: ansible_distribution == 'CentOS'
+      tags:
+        - install-epel
+
+    - name: Install Nginx
+      package:
+        name: nginx
+        state: latest
+      tags:
+        - install-nginx
+
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted
+      notify: Check HTTP Service
+      tags:
+        - always
+
+    - name: Template index.html-easter_egg.j2 to index.html on target
+      template:
+        src: templates/index.html-easter_egg.j2
+        dest: "{{ nginx_root_location }}/index.html"
+        mode: 0644
+      tags:
+        - deploy-app
+
+    - name: Install unzip
+      package:
+        name: unzip
+        state: latest
+
+    - name: Unarchive playbook stacker game
+      unarchive:
+        src: playbook_stacker.zip # Video incorrectly included 'templates/' as prefix, please ignore
+        dest: "{{ nginx_root_location }}"
+        mode: 0755
+      tags:
+        - deploy-app
+
+/templates
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

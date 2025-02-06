@@ -1,0 +1,556 @@
+docker pull {image_name}:{image_version}
+docker images
+docker ps
+docker run -d -p 5000:80 -d --name {container_name} image_name
+docker logs
+docker stop 
+docker rm {name/id} {name/id} {name/id}..
+docker rmi {name/id} {name/id} {name/id}..
+docker info
+docker run -it -p 8080:8080 -v ${PWD}:/app -w /app node:16 npm run serve  
+docker image build -t {image_name{username/app_name}} -f {path_to_dockerfile}
+docker login
+docker tag my-webapp ivaylorashkov/my-webapp
+docker push ivaylorashkov/my-webapp
+docker network create my_network
+docker volume ls 
+docker inspect 
+---------------------------
+
+docker run -dit \
+ --name wordpress_db \
+ -e MYSQL_ROOT_PASSWORD=pass \
+ -e MYSQL_DATABASE=wordpressdb \
+ -e MYSQL_USER=wordpress \
+ -e MYSQL_PASSWORD=wordpress \
+ --expose 3306 \
+ --expose 33060 \
+ --network my_network \
+ -v ${PWD}/data:/var/lib/mysql \
+ mysql
+
+--------------
+
+docker network inspect my_network
+docker volume rm -f 741ed27693a3493310d4348fee2e51a61ae60bc92b100bbe78a42acc698294ad
+
+
+docker run -dit --name wordpress_db -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=wordpressdb -e MYSQL_USER=wordpress -e MYSQL_PASSWORD=wordpress --expose 3306 --expose 33060 --network my_network -v %cd%\data:/var/lib/mysql mysql
+
+docker run -dit --name wordpress-website -e WORDPRESS_DB_HOST=wordpress_db -e WORDPRESS_DB_USER=wordpress -e WORDPRESS_DB_PASSWORD=wordpress -e WORDPRESS_DB_NAME=wordpressdb -v %cd%/wp-data:/var/www/html -p 80:80 --network my_network wordpress
+
+docker run -dit --name ls-server -p 80:8080 lightstreamer:latest
+
+docker run -d --name ghost-container -e NODE_ENV=development -p 3001:2368 ghost:latest
+
+docker run -d --name my-appache-app -v %cd%:/usr/local/apache2/htdocs/ -p 8080:80 httpd:latest
+
+docker run -e "ACCEPT_EULA=Y" -e MSSQL_SA_PASSWORD=yourStrongPassword123# -p 1433:1433 -v sqldata:/var/opt/mssql -d mcr.microsoft.com/mssql/server:latest
+
+docker network create mariadb_network
+docker run -d --name mariadb_server -e MARIADB_USER=mariadbusr -e MARIADB_PASSWORD=mariadbpsw -e MARIADB_ROOT_PASSWORD=mariadbpsw --network mariadb_network mariadb:latest
+docker run -it --name mariadb_client --network mariadb_network mariadb:latest mariadb -hmariadb_server -umariadbusr -p
+
+docker build . -f Dockerfile -t ivaylorashkov/tracker_app
+docker run -d --name tracker_app -p 80:80 ivaylorashkov/tracker_app
+
+docker build . -f TaskBoard.WebApp/Dockerfile -t ivaylorashkov/taskboard_app
+docker run -d --name sqlserver -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=yourStrongPassword123# -p 1433:1433 -v sqldata:/var/opt/mssql --network taskboard_network mcr.microsoft.com/mssql/server:latest
+docker run -d --name web_app --network taskboard_network -p 5000:80 ivaylorashkov/taskboard_app
+
+
+docker network create express-mongo
+docker network create express-react
+docker build . -f Dockerfile -t backend
+docker build . -f Dockerfile -t frontend
+
+docker run -d --name mongo -v mongoVol:/etc/mongo --network express-mongo mongo:latest
+docker run -d --name backend --network express-mongo backend
+docker run -d --name frontend --network express-react -p 3000:3000 frontend
+docker network connect express-react backend
+
+docker compose build
+docker compose up
+docker compose down --rmi all --volumes
+
+docker network create backend
+docker network create frontend
+docker run -d --name redis --network backend redis:latest 
+docker run -d --name postgres -e POSTGRES_PASSWORD=yourStrongPassword123# --network backend -d postgres:latest
+docker network connect frontend result
+docker network connect backend worker
+docker build -t vote .
+docker build -t worker .
+
+mvn clean package -DskipTests
+docker build -t resellerapp .
+docker compose build
+docker compose up
+
+
+docker login azure
+#Docker context allows you to switch between different Docker environments 
+#aci -> azure container instance
+#hey docker you will work with azure from now on.
+docker context create aci nginxacicontext
+docker context ls
+docker context use nginxacicontext
+-------
+docker run -p 80:80 registry.hub.docker.com/nginxdemos/hello
+docker ps -> PORTS-> copy IP and set it in browser for test.
+docker context --help
+
+
+****** terraform ************
+terraform init -> initializira teraform faila
+terraform fmt -> formatira faila
+terraform validate
+terraform plan
+terraform apply
+terraform show
+terraform destroy
+
+$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest -Uri https://aka.msi/installazurecliwindows -OutFile .\AzureCLI.msi; Start-Process msiexec.exe -Wait -ArgumentList '/I AzureCLI.msi /quiet'; rm .\AzureCLI.msi
+
+
+++++++++++++++++ DEPLOY APP USING LOCAL IMAGE/DOCKERFILE AND AZURE COMMANDS FOR CREATING NECESSARY RESOURCES ++++++++++++++++
+
+1.docker build . -f Dockerfile -t tracker-app-image
+2.docker run -d -p 80:80 tracker-app-image
+#create azure group and location
+3.az group create --name trackerappgrp --location westeurope
+#create azure container registry
+4.az acr create --resource-group trackerappgrp --name trackerappcr --sku Basic
+#Login in container registry so we can push the image
+5.az acr login --name trackerappcr
+#to push image in private registry we need first to tag the container image -> will give us login server name
+6.az acr show --name trackerappcr --query loginServer --output table
+#tagging the image
+7.docker tag {local-image-name} {login-server-name}/{new-image-name}:{version}
+  docker tag tracker-app-image trackerappcr.azurecr.io/tracker-app-image:v1
+#check locally
+8.docker images
+#push
+9.docker push trackerappcr.azurecr.io/tracker-app-image:v1
+#list the images in private container registry
+10.az acr repository list --name trackerappcr
+
+# When you deploy an image that's hosted in a private Azure 
+# container registry like the one created, 
+# you must supply credentials to access the registry
+------------------------------------------
+$ACR_NAME='$containerRegistry'
+$SERVICE_PRINCIPAL_NAME='$servicePrincipal'
+
+# Obtain the full registry ID
+$ACR_REGISTRY_ID=$(az acr show --name $ACR_NAME --query "id" --output tsv)
+
+# Create and configure the service principal with pull permissions to your registry
+$PASSWORD=$(az ad sp create-for-rbac --name $SERVICE_PRINCIPAL_NAME --scopes $ACR_REGISTRY_ID --role acrpull --query "password" --output tsv)
+$USER_NAME=$(az ad sp list --display-name $SERVICE_PRINCIPAL_NAME --query "[].appId" --output tsv)
+
+# Output the service principal's credentials
+echo "Service principal ID: $USER_NAME"
+***************************************************
+$ACR_NAME='trackerappcr'
+$SERVICE_PRINCIPAL_NAME='trackerappivo'
+
+# Obtain the full registry ID
+$ACR_REGISTRY_ID=$(az acr show --name $ACR_NAME --query "id" --output tsv)
+
+# Create and configure the service principal with pull permissions to your registry
+$PASSWORD=$(az ad sp create-for-rbac --name $SERVICE_PRINCIPAL_NAME --scopes $ACR_REGISTRY_ID --role acrpull --query "password" --output tsv)
+
+$USER_NAME=$(az ad sp list --display-name $SERVICE_PRINCIPAL_NAME --query "[].appId" --output tsv)
+
+# Output the service principal's credentials
+echo "Service principal ID: $USER_NAME"
+
+echo "Service principal password: $PASSWORD"
+
+------------------------------------------
+Service principal ID: f0afdb05-d76c-4ce6-8e74-28ecea7242eb
+Service principal password: L7N8Q~6U1Uif3tYaelrPmaLFWeCSL11MT1y1zbp_
+
+#Once we have ID and password  we  can configure our apps and services to authenticate
+# to our container registry as the service principal
+
+Now use the az container create command to deploy a container in Azure.
+Use this command and replace 
+<resource-group-name>, 
+<image-name>, 
+<acrLoginServer>, 
+<service-principal-ID> and 
+<service-principal-password> 
+with your corresponding values. 
+Also, replace <container-name> with a name for your container 
+and <aciDnsLabel> with a new DNS name that you like:
+
+az container create --resource-group <resource-group-name> --name <container-name> --image <acrLoginServer>/<image-name>:v1 --cpu 1 --memory 1 --registry-login-server <acrLoginServer> --registry-username <service-principal-ID> --registry-password <service-principal-password> --ip-address Public --dns-name-label <aciDnsLabel> --ports 80
+az container create --resource-group trackerappgrp --name trackerappcontainerivo --image trackerappcr.azurecr.io/tracker-app-image:v1 --cpu 1 --memory 1 --registry-login-server trackerappcr.azurecr.io --registry-username f0afdb05-d76c-4ce6-8e74-28ecea7242eb --registry-password L7N8Q~6U1Uif3tYaelrPmaLFWeCSL11MT1y1zbp_ --ip-address Public --dns-name-label myappdnsivo --ports 80
+
+az container show --resource-group trackerappgrp --name trackerappcontainerivo --query instanceView.state
+
+#extract the url to check if the app is workin on -> myappdnsivo.westeurope.azurecontainer.io
+az container show --resource-group trackerappgrp --name trackerappcontainerivo --query ipAddress.fqdn
+
+az container logs --resource-group trackerappgrp --name trackerappcontainerivo
+
+az group delete --name trackerappgrp
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
++++++++++++++++++++++++++++ AZURE & DOCKER-COMPOSE ++++++++++++++++++++++++++++++++++++++
+To create and use a volume in Azure, we will use the Azure File Share service.
+As you can see, we haven't defined a custom network, as Azure will create a default one.
+If you want, however, you can search and create a custom network in Azure for your containers.
+
+0.az login
+1.az group create --name taskboardgroup --location westeurope
+2.az acr create --name taskboardregistryivorashkov --resource-group taskboardgroup --sku Basic
+3.az acr login --name taskboardregistryivorashkov
+4. az acr show --name taskboardregistryivorashkov --query loginServer --output table
+    - taskboardregistryivorashkov.azurecr.io
+5.Edit docker-compose 
+    - ports should be the same on both ends(80:80/1433:1433)
+    - add image for web-app service
+    - add deploy step in sqlserver
+#run locally
+6. docker compose up --build -d
+# no need to tag as we did in the dockerfile 
+# push to azure registry 
+7. docker compose push 
+# check if exist
+8. az acr repository show --name taskboardregistryivorashkov --repository taskboardimage
+9. Add additional info for the sqlserver volume.
+    Using Azure File Share is used to support volumes for ACI containers.
+    We should create a file share and use it in our docker-compose.yml
+
+volumes:
+    sqldata:
+        driver: azure_file
+        driver_opts:
+          share_name: sql_volume
+          storage_account_name: taskboardstorageacc
+
+- We set the name of the volume to "sql-volume"
+- the storage account name to "taskboardstorageacc"  
+
+# Create Azure context
+10. docker context create aci taskboardcontext
+11. docker context use taskboardcontext
+12. docker compose up --build -d
+13.Check the IP address - docker ps -> copy IP address of the app and run it in the browser
+ 
+ az resource list
+ az acr delete --name {registry} --resource-group {group}
+ az acr delete --name ivostorageacc --resource-group taskboardgroup
+ az acr delete --name taskboardregistryivorashkov --resource-group taskboardgroup
+ az group delete --resource-group taskboardgroup
+ docker context rm taskboardcontext -f
+
+-----------------
+ az login
+ az group create --name posiogroup --location westeurope
+ az acr create --name posioregistryivo --resource-group posiogroup --sku Basic
+ az acr login --name posioregistryivo (make sure context default is used)
+ az acr show --name posioregistryivo --query loginServer --output table
+    - posioregistryivo.azurecr.io
+- add image part in docker-compose file
+docker compose up --build -d
+docker compose push 
+az acr repository show --name posioregistryivo --repository posio 
+docker context create aci posiocontext
+11. docker context use posiocontext
+- add shared file volume in compose
+12. docker compose up --build -d
+13.Check the IP address - docker ps -> copy IP address of the app and run it in the browser
+
+
+--------- TERRAFORM --------------------------
+az login
+create azureconf.tf
+terraform init
+terraform fmt
+terraform validate
+terraform apply
+terraform destroy
+
+
+
+
+-------------------------------------
+main.tf, values.tfvars, variables.tf, outputs.tf
+
+terraform apply -var-file="values.tfvars"
+terraform destroy -var-file="values.tfvars"
+
+*************************
+
+main.tf, terraform.tfvars, variables.tf, outputs.tf
+-> terraform.tfvars кръстена по тоя начин захапва автоматично
+-> github action instead of outputs.tf
+
+-> create github repo, add main.tf, terraform.tfvars, variables.tf
+-> tab Actions -> Terraform (Configure)
+-> terraform-test.yml in github
+-> az login -> "id": "849469a5-bacf-49b3-a6a9-638d980bec0b"
+-> https://portal.azure.com/#home -> subscriptions -> Subscription ID
+-> az ad sp create-for-rbac --name "Azure-Terraform-Github-Actions-Test-Ivo" --role contributor --scopes /subscriptions/849469a5-bacf-49b3-a6a9-638d980bec0b --sdk-auth
+    -> --name should be unique
+->add github secrets from the prev command ids:
+{
+  "clientId": "e30111dd-138f-4713-a85b-5bd66d86a0f1",
+  "clientSecret": "fJL8Q~u0QMg.8NsLygbAQODCgKFXI0huGirBDcRS",
+  "subscriptionId": "849469a5-bacf-49b3-a6a9-638d980bec0b",
+  "tenantId": "4a06d40c-e447-42be-baef-dd0421ed10bd",
+  "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
+  "resourceManagerEndpointUrl": "https://management.azure.com/",
+  "activeDirectoryGraphResourceId": "https://graph.windows.net/",
+  "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
+  "galleryEndpointUrl": "https://gallery.azure.com/",
+  "managementEndpointUrl": "https://management.core.windows.net/"
+}
+
+Repo -> Settings -> Secrets and variables -> Actions -> new repository secret
+create terraform-plan-apply.yml
+github -> actions -> teraform test(validate) and terraform plan apply
+
+Ако пуснем джоба втори път, той ще се счупи, за това трябва да пазим 
+стейт файла в клауда, за да може при всяко пускане на джоба, 
+клауда ще използва файла за да гледа какво е текущото състояние на нашата система/инфра структура
+по този начин ако го ръннем отново и ресурсите съществуват, той ще премине успешно, а няма
+да се счупи защото не може да ги създаде.
+
+За да пазим state-a файл-а в клауда трябва да направим следните неща:
+1. Azure storage account:
+az login
+az group create --name storagegroupivo --location northeurope
+az storage account create --name storageaccivo -g storagegroupivo --location northeurope --sku Standard_LRS --kind storageV2
+az storage container create -n taskboardcontainerivo --account-name storageaccivo
+
+в main.tf добавяме необходимото инфо, за да може
+апликацията ни да използва създадения сторидж контейнер за запазване на стейт файла.
+
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "3.76.0 "
+    }
+  }
+  # Storage information
+  backend "azurerm" {
+    resource_group_name = "storagegroupivo"
+    storage_account_name = "storageaccivo"
+    container_name = "taskboardcontainerivo"
+    key = "terraform.tfstate"
+  }
+}
+
+
+
+--------------- MONITORING ------------------
+
+run docker container for blackbox exporter.
+
+docker run -p 9115:9115 quay.io/prometheus/blackbox-exporter
+http://localhost:9115/probe?target=https://softuni.org
+
+Prometheus -> add configuration for blackbox exporter
+
+create prometheus_blackbox.yml where the prometheus is installed.
+
+prometheus.exe --config.file prometheus_blackbox.yml
+.\prometheus.exe --config.file '.\prometheus_blackbox.yml' 
+
+blackbox -> localhost:9115 # scraping info from target url
+prometheus -> localhost:9090 # configure to extract scraped info and vizualize it.
+grafana -> localhost:3000 # admin/admin
+
+promotheus има възможност за алърти, но това не е неговата основна дейност,
+неговата идея е да ги събере, да ги подготви и да ги прати към друга система
+където да се конфигурират.
+
+Alert_Rules ->[ Prometheus | Evaluate rules]-> Alertmanager 
+Prometheus(localhost:9090)/Status/Targets to see blackbox exporter
+find field in blackbox and use it in Graph - search field for vizualization
+
+********* Prometheus and Alert Manager **************
+за сетване на аларма blackbox exporter -> prometheus -> Alertmanager
+create alertmanager-blackbox.yml in 
+C:\Program Files\alertmanager-0.26.0.windows-amd64\alertmanager-0.26.0.windows-amd64
+
+
+
+
+----------------------
+
+******************* EXAM **********************
+Create DockerFile using VIsual Studio Looks like:
+
+------------------------------------------------------------------------
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+EXPOSE 80
+EXPOSE 443
+WORKDIR /app
+
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+WORKDIR /src
+COPY ["Homies/Homies.csproj", "Homies/"]
+COPY ["Homies.Data/Homies.Data.csproj", "Homies.Data/"]
+RUN dotnet restore "Homies/Homies.csproj"
+COPY . .
+WORKDIR "/src/Homies"
+RUN dotnet build "Homies.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "Homies.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Homies.dll"]
+---------------------------------------------------------------------------
+
+cd .\Users\User\Desktop\ContainersCloud\exams\Homies\
+docker build -t homies .
+docker run -p 80:80 --name homiesweb homies:latest
+- check if its working and delete it for next steps
+create docker-compose.yml
+check in the webproject -> appsettings.json for the DB username and password
+
+SQLSERVER:
+we can check with docker run command taken from SQL official image or create directly in docker compose.
+------------------------------------------------------------------------
+version: '3.8'
+services:
+  sqlserver:
+    container_name: sqlserver
+    image: mcr.microsoft.com/mssql/server:latest
+    ports:
+      - '1433:1433'
+    # deploy:
+    #   resources:
+    #     reservations:
+    #         cpus: '2'
+    #         memory: 2GB  
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: yourStrongPassword12#
+    volumes:
+      - sqldata:/var/opt/mssql/sqlserver
+
+  web_app:
+    container_name: web_app
+    build:
+      dockerfile: ./Dockerfile
+    image: web_app
+    ports:
+      - "80:80"
+    restart: on-failure
+
+volumes:
+  sqldata:
+    # driver: azure_file
+    # driver_opts:
+    #   share_name: sql-volume
+    #   storage_account_name: homiesstorageacc
+------------------------------------------------------------------------
+docker compose build 
+docker compose up --build -d
+docker compose down
+
+#create azure container registry
+ az login
+ # resource group creation
+ az group create --name ivaylorashkovhomiessrg --location westeurope
+
+ # create registry 
+ az acr create --name ivaylorashkovhomiesscr --resource-group ivaylorashkovhomiessrg --sku Basic
+
+# push local image to azure
+first we need to tag the image: 
+docker tag homies ivaylorashkovhomiesscr.azurecr.io/homies 
+
+*set wep-app image to ivaylorashkovhomiesscr.azurecr.io/homies:latest
+
+# login in registry 
+az acr login --name ivaylorashkovhomiesscr 
+(make sure context default is used)
+
+docker compose push 
+OR
+docker push ivaylorashkovhomiesscr.azurecr.io/homies
+
+#create docker context 
+docker context create aci ivaylorashkovhomiecontext
+docker context use ivaylorashkovhomiecontext
+docker context show
+
+12. docker compose up --build -d
+13.Check the IP address - docker ps -> copy IP address of the app and run it in the browser
+
+
+************************************ EX 2 ************************************************
+
+go to terraform main directory and type
+terraform init
+
+# Configure the Terraform configuration file.
+terraform apply -var-file="values.tfvars"
+
+
+
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++
+docker build -t bazar .
+docker run -p 80:80 --name bazarweb bazar:latest
+docker compose up --build -d
+docker compose down 
+
+#create azure container registry
+ az login
+ # resource group creation
+ az group create --name ivaylorashkovbazarsrg --location westeurope
+
+ # create registry 
+ az acr create --name ivaylorashkovbazarscr --resource-group ivaylorashkovbazarsrg --sku Basic
+
+# push local image to azure
+first we need to tag the image: 
+docker tag homies ivaylorashkovbazarscr.azurecr.io/homies 
+
+*set wep-app image to ivaylorashkovbazarscr.azurecr.io/homies:latest
+
+# login in registry 
+az acr login --name ivaylorashkovbazarscr 
+(make sure context default is used)
+
+docker compose push 
+OR
+docker push ivaylorashkovhomiesscr.azurecr.io/homies
+
+#create docker context 
+docker context create aci ivaylorashkovbazarscx
+docker context use ivaylorashkovbazarscx
+docker context show
+
+12. docker compose up --build -d
+13. docker ps -> copy IP address of the app and run it in the browser
+
+
++++++++++++++++++++++++++++++
+
+.\prometheus.exe --config.file '.\prometheus-exam.yml' 
+.\alertmanager.exe --config.file '.\alertmanager-exam.yml'
+
+blackbox -> localhost:9115 # scraping info from target url
+prometheus -> localhost:9090 # configure to extract scraped info and vizualize it.
+grafana -> localhost:3000 # admin/admin
+alertmanager -> localhost:9093
+
+
+

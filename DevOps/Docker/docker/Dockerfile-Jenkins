@@ -1,0 +1,33 @@
+FROM centos
+
+RUN yum -y install openssh-server
+
+# RUN useradd remote_user && \
+#     echo "1234" | passwd remote_user  --stdin && \ # Passwd command is deprecated on centos:8
+#     mkdir /home/remote_user/.ssh && \
+#     chmod 700 /home/remote_user/.ssh
+
+RUN useradd remote_user && \
+    echo "remote_user:1234" | chpasswd && \
+    mkdir /home/remote_user/.ssh && \
+    chmod 700 /home/remote_user/.ssh
+
+COPY remote-key.pub /home/remote_user/.ssh/authorized_keys
+
+RUN chown remote_user:remote_user -R /home/remote_user/.ssh/ && \
+    chmod 600 /home/remote_user/.ssh/authorized_keys
+
+# RUN ssh-keygen -A ( second option if below doesnt work)
+RUN /usr/sbin/sshd-keygen
+
+# install mysql client
+RUN yum -y install mysql
+
+# install aws cli using pip
+RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
+    python get-pip.py && \
+    pip install awscli --upgrade
+
+# instructing docker how the service should be started
+CMD /usr/sbin/sshd -D
+

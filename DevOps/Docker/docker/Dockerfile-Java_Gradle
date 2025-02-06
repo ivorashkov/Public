@@ -1,0 +1,22 @@
+# Stage 1: Build
+FROM gradle:8.2.1-jdk17 as build
+
+WORKDIR /home/gradle/src
+
+COPY --chown=gradle:gradle . /home/gradle/src
+COPY src src
+
+RUN gradle build
+
+# Stage 2: Deploy
+FROM openjdk:11-jre-slim
+
+EXPOSE 8080
+
+WORKDIR /app
+
+ARG DEPENDENCY=/home/gradle/src/build/libs
+
+COPY --from=build ${DEPENDENCY}/carpooling-0.0.1-SNAPSHOT.jar .
+
+ENTRYPOINT ["java", "-jar", "/app/carpooling-0.0.1-SNAPSHOT.jar"]

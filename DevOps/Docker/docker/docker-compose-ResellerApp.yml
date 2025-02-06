@@ -1,0 +1,35 @@
+version: '3' # You can adjust the Compose file version as needed
+services:
+  resellerapp:
+    build:
+      dockerfile: ./Dockerfile
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/resallerdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: my-secret-pw
+    networks:
+      - reseller_backend
+  mysql:
+    image: mysql:8.0 # You can specify a specific MySQL version if needed
+    container_name: my-mysql-container # Give your container a name
+    environment:
+      MYSQL_ROOT_PASSWORD: my-secret-pw # Set your MySQL root password
+      MYSQL_DATABASE: resallerdb # Create a new database (optional)
+      # MYSQL_USER: user # Create a new user (optional)
+      # MYSQL_PASSWORD: userpass # Set the user's password (optional)
+    ports:
+      - 3306:3306 # Map host port to container port (optional)
+    volumes:
+      - mysql-data:/var/lib/mysql # Mount a volume for data persistence (optional)
+    networks:
+      - reseller_backend
+networks:
+  reseller_backend:
+    name: reseller_backend #backend
+volumes:
+  mysql-data: # Define a named volume for data persistence (optional)

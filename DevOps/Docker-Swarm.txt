@@ -1,0 +1,637 @@
+vm1:ssh ivaylorashkov@192.168.100.34 /24
+vm2:ssh ivaylorashkov@192.168.100.35 /24
+vm3:ssh ivaylorashkov@192.168.100.36 /24
+
+sudo apt update
+sudo apt install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install docker-ce
+sudo systemctl status docker
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo docker run hello-world
+sudo usermod -aG docker ${USER}
+
+
+apt update
+apt install apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt update
+apt install docker-ce
+systemctl status docker
+systemctl start docker
+systemctl enable docker
+docker run hello-world
+usermod -aG docker ${USER}
+
+
+apt install net-tools
+sudo netstat -tuln | grep -E '2377|7946|4789'
+
+For opening ports with iptables:
+sudo iptables -A INPUT -p tcp --dport 2377 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 7946 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 7946 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 4789 -j ACCEPT
+
+For opening ports using ufw (Uncomplicated Firewall):
+sudo ufw allow 2377/tcp
+sudo ufw allow 7946/tcp
+sudo ufw allow 7946/udp
+sudo ufw allow 4789/udp
+
+VM1:
+docker swarm init --advertise-addr 192.168.100.34 
+
+he --advertise-addr flag configures the manager node to publish its address as 192.168.100.34. The other nodes in the swarm must be able to access the manager at the IP address.
+
+docker swarm join --token SWMTKN-1-1092b52d8251s9xftbvef84t657b88zi6avqyhtphed4kzfosz-an0rqmitymuc1vur7pkmjecnh 192.168.100.34:2377
+
+Run docker info to view the current state of the swarm:
+
+** Force remove node from swarm *** 
+docker swarm leave --force
+
+
+********  fix issue with:
+WARNING: bridge-nf-call-iptables is disabled
+WARNING: bridge-nf-call-ip6tables is disabled
+
+sudo sysctl net.bridge.bridge-nf-call-iptables=1
+sudo sysctl net.bridge.bridge-nf-call-ip6tables=1
+
+sudo vi /etc/sysctl.conf -> 
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+ sudo sysctl -p
+sudo modprobe br_netfilter
+sudo vim /etc/modules-load.d/bridge.conf ->
+br_netfilter
+
+***************************************
+docker node ls
+
+Workers:
+docker swarm join --token SWMTKN-1-1092b52d8251s9xftbvef84t657b88zi6avqyhtphed4kzfosz-an0rqmitymuc1vur7pkmjecnh 192.168.100.34:2377
+
+Deploy a service to the swarm:
+docker service create --replicas 1 --name helloworld alpine ping docker.com
+
+The docker service create command creates the service.
+**The --name flag names the service helloworld.
+**The --replicas flag specifies the desired state of 1 running instance.
+**The arguments alpine ping docker.com define the service as an Alpine Linux container
+that executes the command ping docker.com.
+
+docker service ls
+
+Inspect the service:
+docker service inspect --pretty <SERVICE-ID>
+docker service inspect --pretty rq1dm4x1j6kr
+
+if we want this information to be as json format
+we can simply remove --pretty flag from the command.
+
+To check which node is running the service:
+docker service ps <SERVICE-ID>
+docker service ps rq1dm4x1j6kr
+
+docker ps on the node where the task is running to see details about the container for the task.
+
+*** Scale the service in the swarm
+to change the desired state of the service running in the swarm:
+docker service scale <SERVICE-ID>=<NUMBER-OF-TASKS>
+docker service scale rq1dm4x1j6kr=5
+
+docker service ps rq1dm4x1j6kr -> check where this task is running and statuses
+docker ps -> on each node to see the running tasks on each VM
+
+****** Delete service *******
+docker service rm helloworld
+docker service inspect helloworld
+docker ps -> on the nodes to confirm the clean up.
+
+
+** APPLY rolling updates to a service *******
+
+docker service create --replicas 3 --name helloworld --update-delay 10s alpine ping docker.com
+
+The --update-delay flag configures the time delay between updates to
+a service task or sets of tasks.
+You can describe the time T as a combination of the number of seconds Ts,
+minutes Tm, or hours Th. So 10m30s indicates a 10 minute 30 second delay.
+
+By default the scheduler updates 1 task at a time.
+You can pass the --update-parallelism flag to configure the maximum number
+of service tasks that the scheduler updates simultaneously.
+
+By default, when an update to an individual task returns a state of RUNNING,
+the scheduler schedules another task to update until all tasks are updated. 
+If at any time during an update a task returns FAILED, the scheduler pauses the update. 
+You can control the behavior using the --update-failure-action flag for docker service create or docker service update.
+
+docker search <image_name>
+
+docker service update [OPTIONS] SERVICE
+$ docker service update --update-delay 10s --image alpine:latest helloworld
+docker service update [FLAGS] [image name that will be updated]
+
+docker service ps helloworld
+docker ps on each environment
+
+The output of service inspect shows if your update paused due to failure:
+To restart a paused update run docker service update <SERVICE-ID>
+docker service update helloworld
+
+To avoid repeating certain update failures, 
+you may need to reconfigure the service by passing flags to docker service update.
+
+Run docker service ps <SERVICE-ID> to watch the rolling update:
+
+******* Drain a node on the swarm **********
+
+CURRENT STEP: https://docs.docker.com/engine/swarm/swarm-tutorial/drain-node/
+
+docker node ls
+
+docker service rm helloworld
+docker service create --replicas 3 --name helloworld --update-delay 10s alpine ping docker.com
+docker service ps helloworld
+
+docker node update --availability drain vm2
+docker node inspect --pretty vm2
+docker node ls
+
+docker service ps helloworld
+docker node update --availability active vm2
+docker node ls
+
+******* Use Swarm mode routing mesh *******
+To use the ingress network in the swarm, you need to have the following
+ports open between the swarm nodes before you enable Swarm mode:
+
+Port 7946 TCP/UDP for container network discovery.
+Port 4789 UDP (configurable) for the container ingress network.
+When setting up networking in a Swarm, special care should be taken. Consult the tutorial for an overview.
+
+You must also open the published port between the swarm nodes and any external
+resources, such as an external load balancer, that require access to the port.
+
+
++++++++++ Publish a port for a service
+
+Use the --publish flag to publish a port when you create a service.
+target is used to specify the port inside the container,
+and published is used to specify the port to bind on the routing mesh.
+If you leave off the published port, a random high-numbered port is bound for each service task.
+You need to inspect the task to determine the port.
+
+docker service create \
+  --name <SERVICE-NAME> \
+  --publish published=<PUBLISHED-PORT>,target=<CONTAINER-PORT> \
+  <IMAGE>
+
+The older form of this syntax is a colon-separated string, where the published port is
+first and the target port is second, such as -p 8080:80.
+The new syntax is preferred because it is easier to read and allows more flexibility.
+
+The <PUBLISHED-PORT> is the port where the swarm makes the service available. 
+The <CONTAINER-PORT> is the port where the container listens. (This parameter is required.)
+
+For example, the following command publishes port 80 
+in the nginx container to port 8080 for any node in the swarm:
+
+docker service create \
+  --name my-web \
+  --publish published=8080,target=80 \
+  --replicas 2 \
+  nginx
+
+When you access port 8080 on any node, Docker routes your request to an active container.
+On the swarm nodes themselves, port 8080 may not actually be bound,
+but the routing mesh knows how to route the traffic and prevents any port conflicts from happening.
+
+You can publish a port for an existing service using the following command:
+
+docker service update \
+  --publish-add published=<PUBLISHED-PORT>,target=<CONTAINER-PORT> \
+  <SERVICE>
+
+You can use docker service inspect to view the service's published port.
+
+docker service inspect --format="{{json .Endpoint.Spec.Ports}}" my-web
+
+[{"Protocol":"tcp","TargetPort":80,"PublishedPort":8080}]
+
+
+Publish a port for TCP only or UDP only
+Long syntax:
+
+docker service create --name dns-cache \
+  --publish published=53,target=53 \
+  dns-cache
+
+Short syntax:
+docker service create --name dns-cache \
+  -p 53:53 \
+  dns-cache
+
+TCP and UDP
+Long syntax:
+
+docker service create --name dns-cache \
+  --publish published=53,target=53 \
+  --publish published=53,target=53,protocol=udp \
+  dns-cache
+
+Short syntax:
+
+docker service create --name dns-cache \
+  -p 53:53 \
+  -p 53:53/udp \
+  dns-cache
+
+UDP only
+Long syntax:
+
+docker service create --name dns-cache \
+  --publish published=53,target=53,protocol=udp \
+  dns-cache
+
+Short syntax:
+docker service create --name dns-cache \
+  -p 53:53/udp \
+  dns-cache
+
+
+
+Bypass the routing mesh
+
+To bypass the routing mesh, you must use the long --publish service and set mode to host.
+If you omit the mode key or set it to ingress, the routing mesh is used. 
+The following command creates a global service using host mode and bypassing the routing mesh.
+
+docker service create --name dns-cache \
+  --publish published=53,target=53,protocol=udp,mode=host \
+  --mode global \
+  dns-cache
+
++++++++++ Configure an external load balancer
+You can configure an external load balancer for swarm services,
+either in combination with the routing mesh or without using the routing mesh at all.
+
++++++++++ Using the routing mesh
+You can configure an external load balancer to route requests to a swarm service.
+For example, you could configure HAProxy to balance requests to an nginx service published to port 8080.
+
+
++++++++++ Without the routing mesh
+To use an external load balancer without the routing mesh, 
+set --endpoint-mode to dnsrr instead of the default value of vip. 
+In this case, there is not a single virtual IP. Instead, Docker sets up 
+DNS entries for the service such that a DNS query for the service name returns 
+a list of IP addresses, and the client connects directly to one of these.
+
+You can't use --endpoint-mode dnsrr together with --publish mode=ingress. 
+You must run your own load balancer in front of the service. 
+A DNS query for the service name on the Docker host returns a list of 
+IP addresses for the nodes running the service. 
+Configure your load balancer to consume this list and balance the traffic 
+across the nodes.
+https://docs.docker.com/engine/swarm/networking/#configure-service-discovery
+
+
+*********** Deploy services to a swarm *********** 
+Create a service:
+Single replica:
+docker service create nginx
+docker service ls
+docker service create --name my_web nginx
+docker service create --name helloworld alpine ping docker.com
+docker service create --name helloworld alpine:3.6 ping docker.com
+*name helloworld
+*uses alpine
+*runs command ping docker.com
+
+****** Create a service using an image on a private registry *****
+
+docker login registry.example.com
+
+docker service  create \
+  --with-registry-auth \
+  --name my_service \
+  registry.example.com/acme/my_image:latest
+
+****** Provide credential specs for managed service accounts ******
+security improvement for Docker on Windows using Group Managed Service Accounts (gMSA) 
+in Enterprise Edition 3.0.
+
+Purpose: It simplifies how credentials for gMSAs are distributed and managed when 
+using Docker in a Swarm cluster.
+
+What’s new: Now, instead of needing to set up credential files on each worker node, 
+you can use Docker configs to centrally manage and provide these credentials.
+
+Where it applies: This feature is specifically for services using Windows containers.
+
+How it works: Credential spec files are not stored on each worker node's disk. 
+Instead, they're applied at runtime directly to the containers, making deployment more secure.
+
+Three ways to specify credentials:
+File-based: Use a file stored in the Docker data directory.
+Registry-based: Read credentials from the Windows registry.
+Config-based: Use a Docker config that is converted to an ID automatically.
+
+To use a config as a credential spec, first create the Docker config containing the credential spec:
+docker config create credspec credspec.json
+
+Now, you should have a Docker config named credspec, and you can create a 
+service using this credential spec. 
+To do so, use the --credential-spec flag with the config name, like this:
+docker service create --credential-spec="config://credspec" <your image>
+
+The following simple example retrieves the gMSA name and JSON contents
+from your Active Directory (AD) instance:
+
+name="mygmsa"
+contents="{...}"
+echo $contents > contents.json
+
+Make sure that the nodes to which you are deploying are correctly configured for the gMSA
+
+To use a config as a credential spec, create a Docker config in a credential spec file named credpspec.json. 
+You can specify any name for the name of the config.
+docker config create --label com.docker.gmsa.name=mygmsa credspec credspec.json
+
+Now you can create a service using this credential spec. 
+Specify the --credential-spec flag with the config name:
+
+docker service create --credential-spec="config://credspec" <your image>
+
+
+*********** Update a service ***********
+you can easily update Docker services to add or remove published ports and change other configurations.
+
+Updating a service: 
+You can modify almost any part of a service using the docker service update command.
+When you do this, Docker restarts the containers with the new settings.
+
+Publishing ports: 
+For a web service like Nginx, it's better to open port 80 to allow external access. 
+You can do this when creating the service with the -p or --publish flag.
+
+Updating ports: 
+To add a port to an existing service, use the --publish-add flag. 
+To remove a previously published port, use the --publish-rm flag.
+
+Example: 
+To update a service named my_web to publish port 80, 
+you use the docker service update command.
+
+docker service update --publish-add 80 my_web
+
+*********** Remove a service ***********
+docker service remove <service_name>
+docker service remove my_web
+docker service ls
+
+*********** Service configuration details ***********
+
+Service configuration: 
+you can configure various runtime settings for Docker services, 
+such as environment variables, directories, and user permissions.
+
+You can set up or update service configurations 
+using commands like docker service create or docker service update. 
+Most configuration options are available during both creation and updates.
+
+Reference: 
+For details, you can check the command-line help using the --help flag.
+
+Runtime environment settings: You can define:
+Environment variables with the --env flag.
+Working directory inside the container with the --workdir flag.
+Username or user ID with the --user flag.
+
+Example: A service can have an environment variable $MYVAR set to myvalue, 
+run from the /tmp/ directory, and executed as my_user.
+
+docker service create --name helloworld \
+  --env MYVAR=myvalue \
+  --workdir /tmp \
+  --user my_user \
+  alpine ping docker.com
+
+*********** Update the command an existing service runs ***********
+
+To update the command an existing service runs, you can use the --args flag.
+The following example updates an existing service called helloworld
+so that it runs the command ping docker.com instead of whatever command it was running before:
+
+docker service update --args "ping docker.com" helloworld
+
+*********** Specify the image version a service should use ***********
+docker service create --name="myservice" ubuntu:16.04
+
+If you specify a digest directly, that exact version of the image is always used when
+creating service tasks.
+
+docker service create \
+    --name="myservice" \
+    ubuntu:16.04@sha256:35bc48a1ca97c3971611dc4662d08d131869daa692acb281c7e9e052924e38b1
+
+Когато създавате service, тагът на изображението се разрешава до конкретния хеш,
+към който сочи тагът в момента на създаване на service. 
+Работните nodes за този service използват този конкретен хеш завинаги, 
+освен ако service не бъде изрично актуализиран. Тази функция е особено важна, 
+ако използвате често променящи се тагове, като например „latest“, защото гарантира, 
+че всички задачи на service използват една и съща версия на изображението.
+
+If content trust is enabled, the client actually resolves the image's tag 
+to a digest before contacting the swarm manager, to verify that the image is signed. 
+Thus, if you use content trust, the swarm manager receives the request pre-resolved. 
+In this case, if the client cannot resolve the image to a digest, the request fails.
+
+If the manager can't resolve the tag to a digest, each worker node is responsible for 
+resolving the tag to a digest, and different nodes may use different versions of the image. 
+If this happens, a warning like the following is logged, substituting the placeholders 
+for real information.
+
+unable to pin image <IMAGE-NAME> to digest: <REASON>
+
+To see an image's current digest, issue the command docker inspect <IMAGE>:<TAG> 
+and look for the RepoDigests line. 
+The following is the current digest for ubuntu:latest at the time this content was written. 
+The output is truncated for clarity.
+
+docker inspect ubuntu:latest
+
+"RepoDigests": [
+    "ubuntu@sha256:35bc48a1ca97c3971611dc4662d08d131869daa692acb281c7e9e052924e38b1"
+],
+
+Ако искаме да обновим сървис, трябва конкретно да кажем docker service update,
+с --image флага както е описано.
+Ако правим промени по сървисите като добавяне,премахване на мрежи, волюми, преименуване на сървиси или 
+други операции, които променят, но не обновяват имиджа на сървиса.
+
+***************** Update a service's image after creation ************************
+
+1.Всеки "tag" представлява "digest":
+  - Някои тагове, като latest, се обновяват често и сочат към нов digest.
+  - Други тагове, като ubuntu:16.04, представляват стабилни версии и рядко се обновяват.
+
+2.Създаване и обновяване на "service":
+  - Когато създадете "service", той използва конкретен "digest" на изображение,
+докато не се обнови чрез service update с флага --image.
+  - При service update --image, "swarm manager" проверява Docker Hub или частен
+Docker registry за актуалния digest, към който сочи tag-а, 
+и обновява задачите на услугата с този digest.
+
+3.Ако използвате "content trust":
+  - Docker клиентът разрешава изображението и предоставя
+swarm manager-а на изображението и неговия digest вместо tag-а.
+
+Когато мениджърът може да разреши tag-а
+1.Ако swarm manager успее да свърже tag-а към конкретен digest:
+  - Инструктира "worker" възлите да преизпълнят задачите с изображението от този digest.
+  1.1 Ако worker-ът:
+    - Вече има кеширано изображението — го използва директно.
+    - Няма кеширано изображението — опитва се да го изтегли от Docker Hub или registry.
+      - При успех — задачата се разполага с новото изображение.
+      - При провал — задачата не може да се разположи и Docker опитва отново, евентуално на друг "worker".
+Когато мениджърът не може да разреши tag-а
+1.Ако swarm manager не успее да свърже изображението към конкретен digest:
+  - Инструктира worker-ите да използват изображението от дадения tag.
+  - Ако worker-ът:
+    - Има кеширано изображението, което съответства на tag-а — използва го.
+    - Няма кеширано изображението — опитва се да го изтегли от Docker Hub или registry.
+      - При успех — задачата се изпълнява успешно.
+      - При провал — Docker прави нов опит, евентуално на друг worker.
+
+************************ Publish ports ************************
+
+When you create a swarm service, you can publish that service's 
+ports to hosts outside the swarm in two ways:
+
+You can rely on the routing mesh:
+When you publish a service port, the swarm makes the service accessible 
+at the target port on every node, regardless of whether there is a task 
+for the service running on that node or not. This is less complex and is 
+the right choice for many types of services.
+
+You can publish a service task's port directly on the swarm node where that service is running:
+This bypasses the routing mesh and provides the maximum flexibility, 
+including the ability for you to develop your own routing framework. 
+However, you are responsible for keeping track of where each task is running and 
+routing requests to the tasks, and load-balancing across the nodes.
+
+Publish a service's ports using the routing mesh:
+
+1.Use --publish <PUBLISHED-PORT>:<SERVICE-PORT> to make a service's 
+port accessible on all swarm nodes.
+2.The swarm routes traffic from any node on the published port to the appropriate service task.
+3.External hosts connect without knowing specific IPs or ports of tasks.
+
+Example: Deploy an Nginx service with three tasks on a 10-node swarm:
+docker service create \
+   --name my_web \
+   --replicas 3 \
+   --publish published=8080,target=80 \
+   nginx
+
+Accessing any node's port 8080 connects to one of the tasks. Test with:
+curl localhost:8080
+
+Publish ports directly on swarm nodes:
+Use mode=host in --publish for direct, node-specific port access instead of routing mesh.
+Note: mode=host allows only one task per node per port unless a random port is assigned.
+
+Example: Run an Nginx service on each node with local port access:
+docker service create \
+  --mode global \
+  --publish mode=host,target=80,published=8080 \
+  --name=nginx \
+  nginx:latest
+
+Each node runs a local Nginx instance accessible on port 8080.
+
+************************ Connect the service to an overlay network ************************
+
+1.Create an overlay network on a manager node:
+docker network create --driver overlay my-network
+
+2.Attach a new service to the overlay network with --network:
+docker service create \
+  --replicas 3 \
+  --network my-network \
+  --name my-web \
+  nginx
+
+++ The swarm extends the overlay network (my-network) to each node with a service task.
+
+3.Attach an existing service to an overlay network using --network-add
+docker service update --network-add my-network my-web
+
+4.Remove a service from a network with --network-rm:
+docker service update --network-rm my-network my-web
+
+************************ Grant a service access to secrets ************************
+1.Create an Overlay Network: Run the following command on a 
+manager node to create an overlay network:
+docker network create --driver overlay my-network
+
++ Once created, all manager nodes in the swarm can access this network.
+
+2.Attach a New Service to the Overlay Network: 
+  Use the --network flag when creating a service to attach it to the overlay network:
+docker service create --replicas 3 --network my-network --name my-web nginx
+
++ This automatically extends the overlay network 
++ (my-network) to each node that runs the service.
+
+3.Connect an Existing Service to an Overlay Network: 
+  Use the --network-add flag to connect an existing service:
+docker service update --network-add my-network my-web
+
+4.Disconnect a Service from an Overlay Network: 
+  Use the --network-rm flag to disconnect a service from a network:
+docker service update --network-rm my-network my-web
+
+5.Granting a Service Access to Secrets:
+  To allow a service to access Docker-managed secrets, use the --secret flag.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

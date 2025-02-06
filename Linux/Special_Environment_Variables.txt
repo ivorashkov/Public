@@ -1,0 +1,522 @@
+Env Variables:
+
+$?  -> Return the exit code of last executed command
+$!  -> Return the PID of the last job run in background
+$$  -> Return the PID of the current process
+$_  -> Return the final argument of the previous command
+
+Prompt related:
+$PS1 -> Regular prompt
+$PS2 -> Prompt during multi-line commands
+
+Променливи за промптове, за да може динамично да извличаме такава информация използваме тези кодове/Макроси:
+Code:
+\h -> hostname until the first '.'
+\H -> full hostname
+\t -> current time in 24h format HH:MM:SS
+\A -> current time in 24h format HH:MM
+\u -> username of the current user
+\w -> current working directory
+\W -> base name of the current working directory
+\# -> command number of this command
+\$ -> if UID=0 then it is '#' otherwise it is '$'
+
+Команди:
+set -> controls shell options. Display values of shell variables
+	Syntax: set [options] [+/-o shell options] [arguments]
+	Examples:
+		#Display shell options suitable for re-use
+		[user@host ~]$ set +o
+		
+		#Display all shell variable names and values
+		[user@host ~]$ set
+		
+unset [options] [name] -> изтриваме променливи или функции
+unset MYVAR1 / unset -v MYVAR1 MYVAR2 MYVAR3
+
+Какви неща можем да изпълняваме в shell-a?
+Executable Artifacts:
+1. Built-in commands -> командите в самия шел (bash, zsh и тн)
+2. External commands -> външни команди:
+	а) двоични файлове -> binary files -> вече компилирани файлове които рънваме за определен резултат.
+	б) скриптове -> scripts ( python, bash, zsh или на какъвто и да е др език.)
+3. Special types:
+	а) Функциите -> functions -> написани са конкретно за дадения шел 
+	б) Aliases
+	
+Ред на търсене на дадени команди при изпълнение:
+Alias -> Function -> Built-in -> Hash -> PATH
+
+Ако искаме да прескочим реда на търсене и изпълнение на командите, можем да използваме редица похвати:
+Force Built-in usage:
+	builtin test
+Set Explicit Path:
+	/bin/test
+Ignore Aliases and Functions:
+	command test	
+Ignore just Aliases:
+	\test
+
+Command hash:
+hash [options] [name]
+#display re-usable list of program locations
+	hash -l
+#add a program location to the list
+	hash -p /bin/ping ping
+
+Command whereis:
+whereis [options] name [name ...]
+#display all files for a command
+	whereis ls
+#display only binary file information
+	whereis -b ls
+
+Command which:
+which [options] name [name ...]
+#show what would have been executed
+	which cd
+#print all matching executables in PATH
+	which -a cd
+	
+Command type:
+type [options] name [name ...]
+#show everything about a single command
+	type -a ls
+#pring information about multiple commands
+	type cd ls pwd
+	
+Command alias:
+alias [-p] [name[=value]]
+#print all aliases in re-usable format
+	alias -p
+#define new alias
+	alias si='uname -a'
+	
+Command unalias:
+---
+
+
+
+Command export:
+Маркираме променлива в шела по специален начин:
+export MYVAR=100
+bash
+-----
+echo $MYVAR
+100
+MYVAR=200
+echo $MYVAR
+200
+exit
+-----
+echo $MYVAR
+100
+
+-----------------------------
+user default profile : "~/"
+
+login -> /etc/profile
+	  -> ~/.bash_profile -> ~/.bashrc -> /etc/bashrc -> /etc/profile.d/* ...-> ~/.bash_logout
+	  
+************** PRACTICE ***************************
+set/env/printenv
+xtrace -> дава ни възможност като го пуснем да видим през какви стъпки минава нашият шел при дадена команда за да се изпълни.
+Активираме я със 'set -x' / deactive -> 'set +x'
+
+
+************** FILES *******************
+regular (-)				|\ Regular
+directory (d)			|/	 files
+symbolic link (l)		|
+block device (b)		|
+character device (c)	| -> Special files
+named pipe (p)			|
+soicket (s)				|
+
+help -> built in commands only
+type cd / if it is built in we can use help on it.
+	  
+man -k passwd -> показва всички вариации на дадената команда.
+като в скобите показва коя секция от ман отговаря за дадената команда.
+можем да кажем коя секция с инфо искаме с 'man (номер на секция) passwd'
+
+------------------------------
+file ./usr/bin/ls -> ще покаже инфо за файла
+stat ~/.bash_history -> ще покаже инфо за файла в хоум директорията на юзъра
+mkdir -p {path}/{dir} -> създава всички директории до последната която сме задали ако не съществуват преди това.
+
+Как да направим много папки на веднъж:
+mkdir -p dir-{10..20}/sub-dir-{A,B,C}
+touch file-{1..5}-{A,B}.txt
+
+ln text-1 newText -> (Hard link creating another name for the same file - same inode)
+ln -s /etc/services linked-services (soft link, symbolic link, new object for accessing another file)
+ls -li -> looking for everything + their inode 
+
+
+**************create user ********************
+useradd [options] login
+#create new user 
+sudo useradd newuser
+#set default expiry date
+sudo useradd -D -e 2023-12-31
+
+*Modify user
+usermod [options] login
+#change user's full name 
+sudo usermod -c 'Demo' newuser 
+#add user to a group
+sudo usermod -aG demogroup newuser
+
+*Delete user
+userdel [options] login
+#remove user withour removing its home folder
+sudo userdel newuser
+#remove user and its home directory
+sudo userdel -r newuser
+
+** create a new user (regular or system) **
+Някой дистрибуции като примерно убунту имаме алтернативни команди:
+adduser [options] user
+#create user
+sudo adduser helpdesk
+#add existing user to existing group
+sudo adduser helpdesk itstaff
+
+*Remove user*
+sudo deluser helpdesk
+
+******* List users**********
+users [options] [file]
+#print current logged users
+users
+
+
+*print info about logged in users
+w [options] user
+#print info about logged users
+w
+#print shorter version
+w --short
+
+**Show who is logged on
+who [options] [file | arg1 arg2 ]
+#print current logged users with headers
+who -Hu
+
+**Last logged users info **
+last [options]
+#list the last five lines
+last -n 5
+#print full login and logout times and dates
+last -F
+
+**unsuccessful login attempts**
+lastb [options]
+#list the last five lines
+sudo lastb -n 5
+#display full user and domain names
+sudo lastb -W
+
+**Report most recent login for all users**********
+lastlog [options]
+#list users and the last time they logged in
+lastlog
+
+**update passwords in batch mode ** ( more automated than passwd)
+chpasswd [options]
+#change password for user
+sudo chpasswd username:password
+
+**change user password expiry info ***********
+chage [options] login
+#show account aging information
+chage -l user
+#set expiry date for account
+sudo chage -E 2023-12-31 username
+
+
+**********change user finger ( descriptive ) information *********
+chfn [options] [login]
+
+******** change user shell ******
+chsh [options] [login]
+#list available shells
+chsh --list-shells
+#change the user's shell
+sudo chsh -s /bin/sh user2
+
+
+******Group commands ***********
+groupadd [options] group
+#add group with custom id
+sudo groupadd -g 2000 developers
+
+groupmod [options] group
+#rename group
+sudo groupmod -n newname oldname
+#change id
+sudo groupmod -g 1500 accounting
+
+*** Ubuntu alternatives *****
+addgroup [options] group
+
+#create new user group
+sudo addgroup itstaff
+#create new system group
+sudo addgroup --system daemons
+
+delgroup [ options ] group
+sudo delgroup itstaff
+sudo delgroup --system daemons
+
+groups [options] [username] -> в кои групи членува юзъра
+
+newgrp [-] [group] -> log in to a new group
+#change current group
+newgrp developers
+#simulate user login while changing the group
+newgrp - developers
+
+sudo -u anotheruser ls /home/anotheruser -> можем да използваме команди от името на друг юзър, не само като руут.
+
+
+************** ACCESS / PERMISSIONS ***********************
+Sticky bit -> prevent non-owners of a file to delete it 
+*usually  used for directories
+*numeric permission is 1xxx
+*can be set in both ways
+
+#set sticky bit of a folder with permissions 755
+chmod 1755 /dir
+#set sticky bit using a symbolic notation
+chmod o+t /dir -> o (others) + t (sticky bit)
+
+***************************
+sudo mkdir -p projectXYZ/Stage{1..3}/DOCUMENTS && sudo touch projectXYZ/Stage{1..3}/DOCUMENTS/document{1..5}.doc && sudo mkdir -p projectXYZ/Stage{1..3}/BUDGET && sudo touch projectXYZ/Stage{1..3}/BUDGET/readme_{en,bg,de}.txt
+sudo chown -R manager.projectxyz projects/*
+sudo rm -r projectXYZ/
+sudo find /shared/projects/projectXYZ -type d -exec chmod 770 {} \;
+sudo find /shared/projects/projectXYZ/ -type f -exec chmod 660 {} \;
+sudo find /shared/projects/projectXYZ -type d -exec chmod g+s {} \;
+
+find /shared/projects/projectXYZ -type d -exec ls -la {}  >>  /shared/projects/outputLog.txt \;
+find /shared/projects/projectXYZ -type f -exec ls -la {}  >>  /shared/projects/outputLog.txt \;
+
+xargs -> динамично задаване на някоя команда.
+tee -> изваждане на лог + записване във файл.
+
+cat new-dirs.txt | xargs mkdir -v
+ls -la | tee tee-out.txt
+
+* -> all (wild card)
+? -> any single character
+[symbols containing]
+[!symbols]
+[[:class:]]
+
+Classes:
+[:alnum:] -> alphanum chars
+[:word:]  -> same as [:alnum:] including underscore '_';
+[:alpha:] -> alphabet
+[:digit:] -> numerics
+[:lower:] -> all lowercase letters
+[:upper:] -> all uppercase letters
+
+wild card example:
+* -> all names
+a* -> starting with a.
+a*.txt
+[abc]??? -> starting with a,b or c followed by 3 chars
+[^abc]*.txt -> filenames that DO NOT start with a,b,c
+
+wild cards are often used with find/ls +
+
+Regular expresions are used to work with the file information itself.
+Wild cards are used for naming, searching for names etc.
+
+Basic regular expressions:
+^,$,.,[,],*
+
+Extended regular expressions:
+Basic + (,),{,},?,+,|
+
+. -> any single character (.text) => atext,btext2,2text,..
+^ -> begining of the line (^text) => text.., textone.., texttwo..
+$ -> end of the line (text$) => ..text, ..newtext, ..lasttext
+\ -> escape char (.\.text) => new.text, new.text2, ..
+? match an element zero times or one time;
+* zero or more times
++ one or more times
+{} match an element a specific number of times
+	{n} -> exactly n times
+	{n,m}at least n times, but nor more than m times
+	{n,}n or more times
+	{,m} no more than m times
+
+find [options] [starting point] [expression]
+#find *.txt files starting from current dir
+find . -type f -name *.txt
+#search for files executable by others
+find . -type -f -perm /o+x
+#all files changed today
+find /tmp -type f -mtime 0 -ls
+#all files bigger than 10MB
+find / -type f -size +10M -ls
+#files that do not belong to particular user
+find /tmp -type f ! -user root
+#files owned by particular user
+find /tmp -type f -user root
+
+tac -> opposite of cat
+tac [options] [files]
+#print on file in reverse
+tac text.txt
+
+uniq [options] [files] -> report or omit repeated lines
+* Отстранява само последователните повтарящи се редове.
+
+#print only duplicate lines
+uniq -D file.txt
+#print contents with repeated lines omitted
+uniq file.txt
+
+sort [options] [files]
+#print sorted content of a file
+sort file.txt
+#print sorted only unique lines of a file
+sort -u file.txt
+
+wc [options] [files]
+#print statistics for a file
+wc /etc/service
+#print number of newlines in a file
+wc -l /etc/service
+
+cut options [files] -> remove sections from each line of files
+#cut field #1(username) from /etc/passwd
+cut -d : -f 1 /etc/passwd
+#cut fields #1 and #7 from /etc/passwd
+cut -d : -f 1,7 /etc/passwd
+
+paste -merge lines of files
+paste [options] [files]
+#merge two files
+paste text1.txt text2.txt
+
+join [options] file1 file2 -> join lines of two files by specific criteria
+#join two files 
+join -t : -j 1 f1.txt f2.txt
+
+tr [options] set1 [set2] => change or delete chars in files
+#convert every : to |
+tr ':' '|' < /etc/passwd
+#delete all occurrences of :
+tr -d ':' < /etc/passwd
+
+grep bash users.txt /etc/passwd -> показва кои редове от кой файл си съвпадат
+cat users.txt /etc/passwd | grep bash -> не показва съответствията в кой файл се намират
+
+grep ^s users.txt -> всички юзъри започващи с 's'.
+grep ^[rs] users.txt
+grep bash$ users.txt -> редовете завършващи на bash
+
+ls -al /etc/????.conf
+ls /etc/????.conf | xargs cat = cat /etc/????.conf
+ls -al /etc/[abc]?????.conf -> започват
+ls -al /etc/[^abc]?????.conf -> не започват
+
+find . -type d -name "dir*"
+find /usr/ -type f -name README
+find /usr/ -type f -iname README -> case insensitive name
+find /etc/ type -f -name "*.conf"
+find / -type f -name "*.txt" -user lsauser
+find / -type f -name "*.txt" -not -user lsauser
+find / -type f -mtime 0 -name "*.conf"
+find /etc -type f -mtime 0 -name "*.conf" -exec cat {} \;
+sort -r text.txt -> reverse sorting
+nl text.txt -> numerate lines
+nl -w3 text.txt -> мястото м/у номера и инфото е широко 3 позиции
+nl -w3 -v100 text.txt -> започва да номерира от 100
+nl -w3 -v100 -i5 text.txt -> брои през 5 (100,105,110..)
+wc -l users.txt -> брои записите в users
+cut -d : -f 7 users.txt -> разделител :, седмото поле от фаил users.txt
+cut -d : -f 7 users.txt | sort
+cut -d : -f 7 users.txt | sort | uniq
+join -t ':' -j 1 -a 1 text1 text2 -> -a 1 означава че 1вия файл е водещ
+join -t ':' -j 1 -v 1 -> дай ми това от първия, което го няма във втория файл.
+
+cat services | grep "^[#]" > services_comments.txt
+cat services | grep -v  "^#" > services_wo_comments.txt
+cat services_wo_comments.txt | grep udp > services_udp.txt
+cat -n services_wo_comments.txt | grep blackjack
+head -n 1586 services_wo_comments.txt > well-known-ports.txt
+head -n 100 well-known-ports.txt | tr '/' '-' > 100-well-known-ports.txt
+cat > doc1.txt << EOF
+cat >  doc2.txt << EOF
+join -t ':' -j 1 -a 1 doc1.txt doc2.txt > doc3.txt
+cut -d - -f 3 doc3.txt | sort | uniq
+cut -d - -f 3 doc3.txt | sort | uniq | wc -l > locations-count.txt
+cat locations.txt | fold -w1 | sort | uniq | wc -l  > locations-count.txt
+sudo find /etc -type f -size -200c | sort > small-etc-files.txt
+
+sed -n '3p' doc3.txt | uniq | tr '-' "\n" > locations.txt
+sed -n '3p' doc3.txt | uniq | tr '-' ' ' > locations.txt
+sed -n '3p' doc3.txt | fold -w1 | sort | uniq > locations.txt
+cat locations.txt | wc -l > locations-count.txt
+
+
+RILA - 172.19.230.147
+PIRIN - 172.19.232.196
+
+ip link show
+ip address show
+sudo ip link set dev eth1 down
+nmcli
+nmcli general status
+nmcli connection show
+sudo nmcli connection del "Wired connection 1"
+sudo nmcli connection add type ethernet ifname eth1 con-name internal
+sudo nmcli connection modify internal ipv4.addresses 192.168.148.1/24 ipv4.method manual
+dnf updateinfo
+sudo dnf -y install dhcp-server 
+sudo vi /etc/dhcp/dhcpd.conf
+sudo dhcpd -t
+
+sudo systemctl start dhcpd
+systemctl status dhcpd
+
+sudo dnf install firewalld
+which firewall-cmd
+ whereis firewalld
+ /usr/sbin/firewalld /usr/lib/firewalld /etc/firewalld /usr/share/man/man1/firewalld.1.gz
+
+
+ Created symlink /etc/systemd/system/multi-user.target.wants/dhcpd.service → /usr/lib/systemd/system/dhcpd.service.
+ sudo nmcli connection up id eth0
+
+ systemctl status firewalld
+ sudo firewall-cmd --get-active-zones
+sudo firewall-cmd --get-zones
+ sudo nmcli connection modify eth0  connection.zone external
+
+ sudo nmcli connection modify internal connection.zone internal
+sudo nmcli connection modify internal connection.zone trusted
+sudo firewall-cmd --get-active-zones
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

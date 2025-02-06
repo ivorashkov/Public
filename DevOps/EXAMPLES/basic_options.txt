@@ -1,0 +1,153 @@
+Docker Command Options
+docker run
+plaintext
+
+docker run [OPTIONS] IMAGE [COMMAND] [ARGS...]
+Options:
+
+-d: Run container in detached mode.
+--name: Assign a name to the container.
+-p: Map container ports to host (e.g., -p 8080:80).
+-v: Mount a volume (e.g., -v /host:/container).
+--rm: Automatically remove the container when it stops.
+--env or -e: Set environment variables (e.g., -e VAR=value).
+--network: Specify the network to connect.
+--entrypoint: Override the default entrypoint.
+-it: Run interactively with a TTY.
+docker build
+plaintext
+
+
+docker build [OPTIONS] PATH
+Options:
+
+-t: Tag the image (e.g., -t my-image:latest).
+--build-arg: Pass build-time variables (e.g., --build-arg VAR=value).
+--no-cache: Disable caching for the build.
+--pull: Always attempt to pull the latest image.
+docker ps
+plaintext
+
+
+
+docker ps [OPTIONS]
+Options:
+
+-a: Show all containers (default shows only running).
+-q: Display only container IDs.
+--filter or -f: Filter output based on conditions (e.g., --filter status=exited).
+docker logs
+plaintext
+
+docker logs [OPTIONS] CONTAINER
+Options:
+
+-f: Follow log output in real-time.
+--tail: Show only the last N lines (e.g., --tail 50).
+--timestamps: Include timestamps in the logs.
+Kubernetes (kubectl) Command Options
+kubectl get
+plaintext
+
+kubectl get [RESOURCE] [NAME] [OPTIONS]
+Options:
+
+-o: Output format (e.g., -o json, -o yaml, -o wide).
+--all-namespaces or -A: List resources across all namespaces.
+--selector or -l: Filter resources by label selector.
+--field-selector: Filter resources by specific field values.
+kubectl apply
+plaintext
+
+kubectl apply [OPTIONS] -f FILENAME
+Options:
+
+-f: Specify the file or directory.
+--dry-run: Preview changes without applying them (client, server).
+--validate: Validate the resource schema before applying.
+kubectl delete
+plaintext
+
+kubectl delete [RESOURCE] [NAME] [OPTIONS]
+Options:
+
+--grace-period: Time to wait before force deletion.
+--force: Force delete resources.
+--wait: Wait for resources to be deleted.
+kubectl logs
+plaintext
+
+kubectl logs [POD] [OPTIONS]
+Options:
+
+-f: Follow log output in real-time.
+--container: Specify which container's logs to show in a multi-container pod.
+--since: Show logs newer than a duration (e.g., --since=1h).
+Ansible Command Options
+ansible (Ad-Hoc Commands)
+plaintext
+
+ansible [HOSTS] -m MODULE -a "ARGS" [OPTIONS]
+Options:
+
+-m: Specify the module to use.
+-a: Arguments to pass to the module.
+--ask-become-pass or -K: Prompt for privilege escalation password.
+-i: Specify the inventory file (default: /etc/ansible/hosts).
+--limit: Limit execution to specific hosts/groups.
+ansible-playbook
+plaintext
+
+ansible-playbook [PLAYBOOK.yml] [OPTIONS]
+Options:
+
+--check: Perform a dry run without making changes.
+--diff: Show differences for changed files.
+--tags: Run only tasks with specific tags.
+--skip-tags: Skip tasks with specific tags.
+--limit: Limit playbook execution to specific hosts/groups.
+ansible-vault
+plaintext
+
+ansible-vault [ACTION] [OPTIONS]
+Options:
+
+--vault-id: Specify which vault ID to use.
+--output: Output decrypted/encrypted file to a specific location.
+Terraform Command Options
+terraform init
+plaintext
+
+terraform init [OPTIONS]
+Options:
+
+-input: Ask for input during initialization (true/false).
+-reconfigure: Reconfigure the backend.
+-upgrade: Upgrade modules and providers to the latest versions.
+terraform plan
+plaintext
+
+terraform plan [OPTIONS]
+Options:
+
+-out: Save the plan to a file for later application.
+-var: Pass a variable (e.g., -var="key=value").
+-var-file: Specify a file with variable values.
+-detailed-exitcode: Return detailed exit codes for changes.
+terraform apply
+plaintext
+
+terraform apply [OPTIONS]
+Options:
+
+-auto-approve: Skip interactive approval.
+-var: Pass variables for the deployment.
+-parallelism: Limit concurrent resource operations.
+terraform destroy
+plaintext
+
+terraform destroy [OPTIONS]
+Options:
+
+-auto-approve: Skip confirmation before destroying resources.
+-var: Pass variables for the destroy operation.

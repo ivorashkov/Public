@@ -1,0 +1,31 @@
+@use './mixins.scss';
+@use './variables.scss';
+
+.grid {
+    .grid__row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: -10px;
+    }
+
+    .grid__col {
+        padding: 10px;
+    }
+
+    .grid__col--1of3 {
+        width: $grid-1of3;
+
+        @include breakpoint-down-mobile {
+            width: $grid-1of1;
+        }
+    }
+
+    .grid__col--1of4 {
+        width: $grid-1of4;
+        display: flex;
+
+        @include breakpoint-down-mobile {
+            width: $grid-1of2;
+        }
+    }
+}

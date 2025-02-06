@@ -1,0 +1,164 @@
+Python fundamentals
+
+by creating a python file on the server, using the .py file extension, and running it in the Command Line:
+C:\Users\Your Name>python myfile.py
+
+
+variables:
+int, float, str, bool
+
+number=10
+print(number)
+
+variables:
+x = 5
+y = "Hello, World!"
+
+If you want to specify the data type of a variable, this can be done with casting
+x = str(3)    # x will be '3'
+y = int(3)    # y will be 3
+z = float(3)  # z will be 3.0
+
+x = 1    # int
+y = 2.8  # float
+z = 1j   # complex
+
+To verify the type of any object in Python, use the type() function:
+print(type(x))
+print(type(y))
+print(type(z))
+
+Import the random module, and display a random number between 1 and 9:
+
+import random
+
+print(random.randrange(1, 10))
+
+*Casting
+x = float(1)     # x will be 1.0
+y = float(2.8)   # y will be 2.8
+z = float("3")   # z will be 3.0
+w = float("4.2") # w will be 4.2
+
+**Multiline Strings
+You can assign a multiline string to a variable by using three quotes:
+Or three single quotes:
+
+a = """Lorem ipsum dolor sit amet,
+consectetur adipiscing elit,
+sed do eiusmod tempor incididunt
+ut labore et dolore magna aliqua."""
+
+a = '''Lorem ipsum dolor sit amet,
+consectetur adipiscing elit,
+sed do eiusmod tempor incididunt
+ut labore et dolore magna aliqua.'''
+
+Get the character at position 1 (remember that the first character has the position 0):
+a = "Hello, World!"
+print(a[1])
+
+Looping Through a String
+
+for x in "banana":
+  print(x)
+
+To get the length of a string, use the len() function.
+a = "Hello, World!"
+print(len(a))
+
+Check if "free" is present in the following text:
+
+txt = "The best things in life are free!"
+print("free" in txt)
+
+Print only if "free" is present:
+
+txt = "The best things in life are free!"
+if "free" in txt:
+  print("Yes, 'free' is present.")
+
+Check if "expensive" is NOT present in the following text:
+
+txt = "The best things in life are free!"
+print("expensive" not in txt)
+
+You can return a range of characters by using the slice syntax.
+Specify the start index and the end index, separated by a colon, to return a part of the string.
+Get the characters from position 2 to position 5 (not included):
+
+b = "Hello, World!"
+print(b[2:5])
+
+Get the characters from the start to position 5 (not included):
+
+b = "Hello, World!"
+print(b[:5])
+
+Get the characters from position 2, and all the way to the end:
+
+b = "Hello, World!"
+print(b[2:])
+
+Get the characters:
+
+From: "o" in "World!" (position -5)
+
+To, but not included: "d" in "World!" (position -2):
+
+b = "Hello, World!"
+print(b[-5:-2])
+
+a = "Hello, World!"
+print(a.upper())
+
+a = "Hello, World!"
+print(a.lower())
+
+The strip() method removes any whitespace from the beginning or the end:
+
+a = " Hello, World! "
+print(a.strip()) # returns "Hello, World!"
+
+The replace() method replaces a string with another string:
+
+a = "Hello, World!"
+print(a.replace("H", "J"))
+
+The split() method returns a list where the text between the specified separator becomes the list items.
+The split() method splits the string into substrings if it finds instances of the separator:
+
+a = "Hello, World!"
+print(a.split(",")) # returns ['Hello', ' World!']
+
+Use the format() method to insert numbers into strings:
+
+age = 36
+txt = "My name is John, and I am {}"
+print(txt.format(age))
+
+quantity = 3
+itemno = 567
+price = 49.95
+myorder = "I want {} pieces of item {} for {} dollars."
+print(myorder.format(quantity, itemno, price))
+
+quantity = 3
+itemno = 567
+price = 49.95
+myorder = "I want to pay {2} dollars for {0} pieces of item {1}."
+print(myorder.format(quantity, itemno, price))
+
+The escape character allows you to use double quotes when you normally would not be allowed:
+txt = "We are the so-called \"Vikings\" from the north."
+
+Code	Result	Try it
+\'  	Single Quote	
+\\	    Backslash	
+\n	    New Line	
+\r	    Carriage Return	
+\t  	Tab	
+\b	    Backspace	
+\f	    Form Feed	
+\ooo	Octal value	
+\xhh	Hex value

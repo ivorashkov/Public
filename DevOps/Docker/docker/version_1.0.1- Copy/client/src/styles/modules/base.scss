@@ -1,0 +1,132 @@
+body {
+	min-width: 320px;
+	background: $c-white;
+	font-family: $ff-sans-serif;
+	font-weight: $font-weight-base;
+	font-size: $font-size-base;
+	line-height: $line-height-base;
+	color: $c-black;
+}
+
+a {
+	color: inherit;
+	text-decoration: underline;
+
+	&:hover {
+		text-decoration: none;
+	}
+
+	&[href^="tel"] {
+		text-decoration: none;
+	}
+}
+
+.h1,
+h1,
+.h2,
+h2,
+.h3,
+h3,
+.h4,
+h4,
+.h5,
+h5,
+.h6,
+h6 {
+	margin-bottom: calc(#{$line-height-base}em / 2);
+}
+
+.h1,
+h1 {
+	font-size: 45px;
+}
+
+.h2,
+h2 {
+	font-size: 40px;
+}
+
+.h3,
+h3 {
+	font-size: 35px;
+}
+
+.h4,
+h4 {
+	font-size: 30px;
+}
+
+.h5,
+h5 {
+	font-size: 25px;
+}
+
+.h6,
+h6 {
+	font-size: 20px;
+}
+
+p,
+ul,
+ol,
+dl,
+hr,
+table,
+blockquote {
+	margin-bottom: #{$line-height-base}em;
+}
+
+h1:last-child,
+h2:last-child,
+h3:last-child,
+h4:last-child,
+h5:last-child,
+h6:last-child,
+p:last-child,
+ul:last-child,
+ol:last-child,
+dl:last-child,
+table:last-child,
+blockquote:last-child {
+	margin-bottom: 0;
+}
+
+.hidden {
+	display: none;
+}
+
+.btn {
+	display: block;
+    border: none;
+    padding: 10px 20px;
+    margin: 0;
+    text-decoration: none;
+    background: $c-base;
+    color: $c-white;
+    font-family: sans-serif;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+    cursor: pointer;
+    text-align: center;
+    transition: background 250ms ease-in-out, 
+	transform 150ms ease;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+	width: 100%;
+
+	&:hover {
+		background-color: $c-pink;
+	}
+}
+
+.btn--red {
+	display: inline-block;
+	padding: 10px;
+	position: absolute;
+	top: 5px;
+	right: 5px;
+	width: unset;
+	background-color: $c-red;
+	z-index: 15;
+}

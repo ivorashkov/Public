@@ -1,0 +1,38 @@
+#Creating DB indexes and DB table fixes
+
+ CREATE INDEX country_index ON offers(country);
+ CREATE INDEX city_index ON offers(city);
+ CREATE INDEX duration_index ON offers(duration_in_days);
+ CREATE INDEX stars_index ON offers(stars);
+ CREATE INDEX price_index ON offers(price);
+ CREATE INDEX discount_index ON offers(discount);
+ CREATE INDEX user_id_index ON offers(user_id);
+
+ #insert roles
+ insert into roles (role_name) values('ADMIN'),('INACTIVE'),('ACTIVE');
+
+#create default admin user/acc:admin1@abv.bg pass:admin321
+#create default admin user/acc:admin2@abv.bg pass:admin987
+insert into
+    users(approved_by,
+          email_address,
+          first_name,
+          last_name,
+          password,
+          phone_number,
+          role_id)
+values
+       (0,
+        'admin1@abv.bg',
+        'admin1',
+        'admin1',
+        '$2a$10$aveTbx.OD8l0ygH4ILMrCuIISac1QuO1EMyKLHLW9AwD4NupnV4uC',
+        '0884661663',
+        1),
+       (0,
+        'admin2@abv.bg',
+        'admin2',
+        'admin2',
+        '$2a$10$x4aCbHWbHdm01o9QdC9moeA14aLjnECilNtb9TSQRNTUuME2TPBSm',
+        '0884600585',
+        1);

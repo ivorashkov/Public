@@ -1,0 +1,451 @@
+Freestyle Job:
+New Item -> Freesyle project
+Manage jenkins -> Nodes
+Manage jenkins -> Plugins -> Available / Installed / Updates
+
+jenkins file script could use declarative syntax or script syntax.
+declarative syntax is newer and easier
+
+declarative starts with pipeline {..}, script starts with node{}
+
+documentations syntax: https://www.jenkins.io/doc/book/pipeline/
+
+job -> replay -> pipeline syntax -> sample step {choose what we are going to do and click on 'Generate Pipeline Script'}
+
+official jenkins image-> https://hub.docker.com/r/jenkins/jenkins
+Docs: https://github.com/jenkinsci/docker/blob/master/README.md
+
+docker pull jenkins/jenkins
+docker run -p 8080:8080 -p 50000:50000 -d -v jenkins_home:/var/jenkins_home  jenkins/jenkins:lts
+
+Expose 8080 -> by default runs on that project
+Expose 50000 -> Master/Slave communication
+
+docker ps
+docker logs {containterId}
+
+
+*********************
+Jenkins initial setup is required. An admin user has been created and a password generated.
+Please use the following password to proceed to installation:
+
+d9a1212c66b243f0b7db39aad2105dce
+*******************
+admin
+admin123
+
+Projects in jenkins:
+Freestyle -> simple single tasks -> example: run tests
+Pipeline -> whole delivery cycle -> test, build, package, deploy etc.. (for single branch)
+Multibranch Pipeline -> like Pipeline for multi branches
+
+Create multibranch pipeline:
+    Credentials:
+        Scope of credentials:
+            System credentials -> available only for jenkins server (not visible or accessible for jenkins jobs)
+            Global -> accessible everywhere
+            Project -> Limited to project, ONLY with bultibranch pipeline
+        Type of credentials:
+            Username & Password
+            Certificate
+            Secret file
+            Secret text
+            (new type of Plugin might add new different type of credentials)
+ 
+
+ Scripted vs Declarative Pipelines:
+
+Scripted Pipeline:
+Imperative Style: 
+    Scripted Pipeline follows an imperative programming paradigm,
+    where you write the pipeline as a series of scripted steps.
+Flexibility:
+    It offers more flexibility and allows you to define the pipeline using Groovy scripting language,
+    giving you full control over the flow of execution.
+Verbose:
+    Scripted Pipeline tends to be more verbose compared to Declarative Pipeline due to the explicit scripting nature.
+
+**********************************
+node {
+    stage('Build') {
+        // Execute build steps
+        sh 'mvn clean install'
+    }
+    stage('Test') {
+        // Execute test steps
+        sh 'mvn test'
+    }
+    stage('Deploy') {
+        // Deploy the application
+        sh 'kubectl apply -f deployment.yaml'
+    }
+}
+**********************************
+
+Declarative Pipeline:
+Declarative Style:
+    Declarative Pipeline, on the other hand, follows a declarative programming paradigm. 
+    It provides a more structured and concise way to define pipelines.
+Limited Flexibility:
+    It's less flexible compared to Scripted Pipeline as it enforces a certain structure and
+    restricts the use of arbitrary Groovy code.
+Readability:
+    Declarative Pipeline tends to be more readable and easier to understand,
+    especially for users who are not proficient in Groovy scripting.
+
+**********************************
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                // Execute build steps
+                sh 'mvn clean install'
+            }
+        }
+        stage('Test') {
+            steps {
+                // Execute test steps
+                sh 'mvn test'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                // Deploy the application
+                sh 'kubectl apply -f deployment.yaml'
+            }
+        }
+    }
+}
+**********************************
+
+2 ways to trigger build
+1.Push notification  (more efficient) -> Version Control notifies jenkins on new commit
+- we need to configure jenkins and source code management tool to communicate to each other.
+    1. install jenkins plugin based on your version control system;
+    2. configure repository server hostname;
+    3. Access token or credentials.
+2.Polling -> jenkins polls in regular intervalls
+    1. Scan multibranch pipeline trigger
+
+Variables:
+1.jenkinsUrl:8080/env-vars.html -> all available variables from jenkins
+2.Define own variables -> environment{}
+
+Using credentials in jenkinsfile:
+1. define credentials in jenkins GUI and use method to get the value in environment{} variable to use it.
+
+
+Parameters in jenkins -> using block parameters{}
+
+For more powerful groovy logic we can use script{} blocks
+
+
+Execute a bash script from Jenkins
+
+create file outside of the container:
+vi script.sh
+chmod +x ./script.sh
+./script.sh Ivaylo Rashkov
+----------------
+#!/bin/bash
+
+NAME=$1
+LASTNAME=$2
+
+echo "Hello, $NAME $LASTNAME"
+
+----------------
+
+copy script.sh to jenkins container:
+docker cp script.sh {container_name}:{path}/script.sh
+in jenkins we can just call the script:
+{path}/script.sh Ivaylo Rashkov
+
+
+Parameters in Jenkins:
+can be done in Execute shell text field as shown above with the bash script
+
+if we want to dynamically set the param value "this project is parameterized - Add parameter" 
+-> jenkins will ask for the values when we start it 
+
+creating list parameter with script jenkins:
+-> choice parameter: choices
+
+add basic logic and boolean parameters
+
+
+EXECUTE JOBS FROM REMOTE MACHINES:
+Docker + Jenkins + SSH - I
+    1. Create another VM as remote host and connect jenkins to VM
+    2. Create another docker container which has SSH service to connect to Jenkins container.
+
+Dockerfile:  dockerfile-connect-to-jenkins-remote-test (installing open ssh-server)
+
+create ssh key:
+ssh-keygen -f remote-key -> this creates 2 files 
+remote-key -> private key (keep private) & 
+remote-key.pub -> public key
+
+set docker-compose for both images jenkins and remote-host.
+docker compose build
+docker compose up -d 
+
+Test if we can see the remote_host server and connect to it:
+    ping remote_host
+    docker exec -it jenkins bash
+    ssh remote_user@remote_host
+
+Test key file connection:
+    docker cp remote-key jenkins:/tmp/remote-key
+    docker exec -it jenkins bash
+    ls -la /tmp/
+    ssh -i remote-key remote_user@remote_host
+
+Integrate docker ssh server with jenkins:
+    -> we use UI > "ssh remote hosts", setting  credentials for remote_user, ssh key 
+
+How to run JJ over ssh in remote host:
+New job -> build [execute shell script on remote host using ssh]
+
+Mysql + AWS + Shell scripting + Jenkins:
+add mysql service in docker_compose_jenkins.yml
+docker compose up -d
+docker exec -it db bash
+mysql -u root -p -> log in db
+show databases; -> test dbs 
+
+install mysql client and AWS CLI:
+we need to install mysql and aws in remote_host:
+adjusting the dockerfile for remote_host "dockerfile-connect-to-jenkins-remote-test"
+docker compose build
+docker compose up -d
+
+create mysql database
+docker exec -it remote_host bash
+mysql -u root -h db_host -p 
+create database testdb;
+use testdb;
+create table...etc.
+
+create s3 bucket on aws
+aws console -> search "s3" + create bucket..
+
+create user:
+search "iam(identity and access management)" -> user + add user ...
+
+how to take msql backup and upload it manually to s3:
+mysqldump -u root -h db_host -p testdb > /tmp/db.sql
+export AWS_ACCESS_KEY_ID={user access id key}
+export AWS_SECRET_ACCESS_KEY={user secret access key}
+
+aws s3 cp /tmp/db.sql s3://jenkins-mysql-backup/db.sql
+
+automate the backup and upload process with shell script:
+How to integrate the script with AWS:
+log into remote host container
+create script:
+--------------------------------------
+AWS.sh
+--------------------------------------
+
+chmod +x {path to script}
+
+Jenkins > Credentials > System > Global Credentials > add credentials > Secret file
+NAME > name:MYSQL_PASSWORD > Secret:{password} > OK
+NAME > name:AWS_SECRET_KEY > Secret:{key} > OK
+
+create params in jenkins and call them as we call them in bash script(${name}) in execute shell
+script box.
+
+Jenkins & Ansible:
+install ansible pip linux -> sudo pip install ansible
+create dockerfile -> Dockerfile-jenkins-ansible
+
+create ansible inventory:
+create ansible inventory file and save it in the shared volume with jenkins-ansible
+container
+log into jenkins-ansible container and execute:
+ansible -i hosts -m ping test1 -> to test specific host 
+
+create ansible playbook:
+go to jenkins-ansible directory:
+create file called play.yml, we are creating files in the host machine,
+but they will be used and runned whitin the 
+jenkins container (because its in the jenkins volume)
+copy play.yml in jenkins_home
+docker exec -it jenkins bash
+ansible-playbook -i hosts play.yml
+
+Integrate Ansible and Jenkins (Ansible plugin)
+How to execute playbook from jenkins:
+go in jenkns container > create jenkins project >
+build > add build step "Invoke Ansible playbook"
+{full path to playbook}/{playbook_name}
+
+Add parameters to ansible and jenkins:
+create var MSG, go in jenkins UI > general > parameter +
+Invoke Ansible playbook > extra variables...
+key -> variable name in ansible script
+value -> name of variable created in jenkins UI
+
+Add colors in playbook's console output in jenkins:
+install plugin called -> AnsiColor
+job > Configure > Build Environment > Color ANSI console output >
+Invoke Ansible playbook > Colorized stdout
+
+
+ansible-playbook -i hosts people.yml -e "PEOPLE_AGE=25"
+дефинираме няква логика за ансибъл променлива PEOPLE_AGE(ако съществува да се случи нещо)
+$sql = "SELECT id,name,lastname, age FROM register {% if PEOPLE_AGE is defined%} where age = {{PEOPLE_AGE}} {% endif %}"
+
+Jenkins & Security
+
+Global environment variables available in jenkins:
+jenkinsUrl:8080/env-vars.html
+
+Jenkins and Custom Global variables:
+Manage Jenkins > Configuration > Global properties > Environment variables
+
+Modify/Change Jenkins url:
+Manage Jenkins>Configure System>Jenkins Location > Jenkins URL
+
+How to execute jobs automatically:(scheduling jobs)
+Job>Configure>Build triggers>Build periodically> cron expressions
+https://crontab.guru/ we can set H instead of 
+"0 1 * * *" we can set 'H' instad of '0' "H 1 * * *" so jenkins can prio if
+several jobs are set at the same time to run them one by one for less stress.
+
+Trigger Job from bash script(No params):
+copy url from "build now" button so we can use it to trigger the job
+within the script.
+We need to set CSRF Protection (configure Crumbs/Tokens when calling the job from script)
+how to create crumb:
+crumb=$(curl -u "username:password" -s 'http://{jenkins-url}/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)')
+echo $crumb
+
+create script crumb.sh
+
+
+Jenkins & Mail:
+setting up mail plugin if not existing > Mailer
+Jenkins and Amazon service:
+verfify cloud mail > JJ > Manage > Configure > E-mail notification. > SMTP
+
+Jenkins and Gmail:
+google "SMTP gmail settings"
+
+How to integrate notifications with job
+Job > Configure > Post-build actions > E-mail notification
+
+Jenkins & Maven
+Install GIT plugin and Maven Plugin
+
+Clone git repository from jenkins
+Maven-project job: Source Code Management > Git > Repo URL: "Build Now"
+
+How to build jar using maven:
+1.Manage Jenkins > Global tool Conf > Maven > Add maven > jenkins-maven;
+2.Maven-job > Configure > Build > Invoke top-level Maven targets > jenkins-maven > Goals:{command to build package}
+
+How to execute Unit tests on project:
+Add build step > Invoke top-level Maven targets > Maven version: jenkins-maven > Goals: test
+
+test is an argument in maven - maven test (will scan the project and look for tests)
+
+if exception comes out for the maven version we can do the following:
+Define the global environment variable:
+_JAVA_OPTIONS=-Djdk.net.URLClassPath.disableClassPathURLCheck=true
+
+Deploy your jar locally:
+Copy path where jar was created from the console output
+Configure > Add new Build step > Execute shell > java -jar {path to jar}
+
+Display the result of your tests using a graph:
+tests usually are generated in XML file where the output is stored.
+Path can be found in console output where we run the tests.
+Add post-building Actions > Publish JUnit test result report
+
+How to archive the last successful artifact:
+
+Configure>Add post-build action>Archive the artifact>{path_to_jar}>Archive artifact only if the build is successful.
+
+Integrage Email notifications about the status of project:
+add post-build aciton: E-mail notification
+
+Create a git server using Docker: docker-compose_jenkins-ansible-web-git
+
+sudo yum -y install git -> for installing git to our linux server.
+
+Integrate your git server to your maven job:
+Create Git user>Configure>Source Code Management>
+
+Git Hooks: create custom_hooks.sh
+
+Trigger your jenkins job using a Git Hook:
+Grep -R "what_we_search_for" -> will find us all files containing this search with their path.
+
+Jenkins DSL:
+-> using code (groovy) instead of UI. We need to install Job DSL plugin.
+
+Seed Job in DSL -> Job that creates jobs configured within it.
+
+It is find in Build > Process Job DSLs > Use the provided DSL script:
+-------------------
+job('job_dsl_example') {}
+-------------------
+Generate a job with the same defined name within jenkins
+More info in jenkins DSL documentation.
+
+DSL jobs are not good to be manually changed. We should use the parent DSL seed job to change them.
+
+How to trigger DSL jobs whenever we push changes to git repo:
+create custom hook folder with post-receive(custom_hooks.sh) file with the github repo URL within it.
+
+documentations about declarative and script jenkins pipelines: https://www.jenkins.io/doc/book/pipeline/
+
+Install docker into docker container:
+
+Docker inside docker container - installing it inside the jenkins container for example,
+will make it easier to create images and maintain the containers within the jenkins.
+
+Log into jenkins container: create dockerfile: Dockerfile-ansible-docker
+sudo chown jenkinsuser:jenkinsgroup /var/run/docker.sock -> we need to grand access and
+permission to jenkins user within the jenkins container to access the outside layer of 
+docker.sock file.
+
+Create a jar for Maven app using docker:
+docker pull maven:3-alpine
+docker images | grep maven
+**TEST what we need for the pipeline ***
+if we go to /root/.m2/ -> folder stores all packages that will be installed from the pom.
+Thats why we need to map it for the outside world as well.
+
+1.docker run --rm -it -v $PWD/java-app-folder:/app -v /root/.m2/:/root/.m2/ maven:3-alpine sh -> creating maven container and connect to it.
+adding working directory -w
+-> -w /app we will be automatically in the folder that holds the code
+docker run --rm -it -v $PWD/java-app-folder:/app -v /root/.m2/:/root/.m2/ -w /app maven:3-alpine sh
+to execute mvn package automatically:
+1. remove -it
+2. remove sh because we don't want to enter the container
+3. pass mvn package at the end so it will be automatically executed
+- "docker run --rm  -v $PWD/java-app-folder:/app -v /root/.m2/:/root/.m2/ -w /app maven:3-alpine mvn -B -DskipTests clean package"
+2.cd /app/ -> here is the pom file, src, readme and jenkins folder with the pipeline.
+3.mvn package
+
+Create bash script to automate Jar creation:
+maven.sh 
+
+Create dockerfile and build an image with your jar: Dockerfile-maven-2
+docker build -f Dockerfile-Java -t java-mvn-img . 
+docker run -d java-mvn-img
+
+Create docker-compose file for Dockerfile-maven-2: docker-compose_maven_java-2
+export BUILD_TAG=1
+docker-compose -f docker-compose_maven_java-2.yml build
+
+Bash to automate docker Image creation process:build_maven.sh
+
+Add script to jenkinsfile: pipeline-docker-maven
+
+export $VAR=$(sed -n '1p' /tmp/.auth)

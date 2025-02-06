@@ -1,0 +1,46 @@
+find, 
+
+find ./desktop -name "docker"
+find . -name "docker" -> търси всички в цялата директория на компа
+# list all files in current folder and subfolders with given pattern
+find . -name "pattern"
+# list all files that match pattern 1 or pattern2
+find . -type d -name pattern1 -or -name pattern2
+# list all files that match pattern excluding a path
+find . -type d -name 'pattern' -not -path 'excluded_path/*'
+# list all files with size > 100k and size < 1M
+find . -type f -size +100k -size -1M
+# list all files last edited in last 3 days
+find . -type f -mtime +3
+
+$ find [where to start searching from]
+ [expression determines what to find] [-options] [what to find]
+ 
+ $ find ./GFG -name sample.txt 
+
+----------------------------------------------------
+locate,  locate command in Linux is used to find the files by name.
+locate [OPTION]... PATTERN...
+locate sample.txt 
+locate "*.html" -n 20
+
+--------------------------------------
+cd, cd.. cd / , cd ~/directory
+
+---------------------------------------
+ls, 
+
+ls -a	list all files including hidden file starting with '.'.
+ls -d	list directories - with ' */'.
+ls -l	list with long format - show permissions.
+ls -F	Append indicator (one of */=>@|) to entries.
+ls -lh	This command will show you the file sizes in human readable format.
+ls -r	list in reverse order.
+ls -i	list file's inode(index) number.
+ls -ltr	View Reverse Output Order by Date.
+ls -t	sort by time & date.
+ls -n	It is used to print group ID and owner ID instead of their names.
+ls -m	A list of entries separated by commas should fill the width.
+ls -g	This allows you to exclude the owner and group information columns.
+ls -q	Force printing of non-graphic characters in file names as the character `?';.
+ls -Q	Place double quotations around the entry names.

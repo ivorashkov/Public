@@ -1,0 +1,27 @@
+ping, a general utility which is used for checking whether 
+ any network is present and if a host is attainable.
+ 
+ 
+To request IPv4 or IPv6 address, 
+we can add -4 or -6 before IP/hostname or after ping command.
+ping [options] hostname or IP address   
+ping -4 hostname/IPv4  
+ping -6 hostname/IPv6  
+-------------------------
+
+telnet, # $ telnet ip_address/host port_number
+
+the telnet command is used to create a remote connection with a system over a TCP/IP network.
+It allows us to administrate other systems by the terminal.
+We can run a program to conduct administration.
+
+---------------------------------------------------
+
+ssh,  - The ssh command provides a secure encrypted connection between two hosts over an insecure network.
+#for basic ssh
+ssh username@IP_ADDRESS / ssh user_name@host(IP/Domain_name)
+
+ssh command instructs the system to establish an encrypted secure connection with the host machine.
+user_name represents the account that is being accessed on the host.
+host refers to the machine which can be a computer or a router that is being accessed.
+ It can be an IP address (e.g. 192.168.1.24) or domain name(e.g. www.domainname.com).

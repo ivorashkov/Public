@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  app:
+    image: my-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - APP_ENV=production
+    environment:
+      - APP_ENV=production
+      - APP_PORT=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    networks:
+      - app-network
+    depends_on:
+      - db
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,167 @@
+Docker Commands
+Container Management
+docker run [OPTIONS] IMAGE [COMMAND] [ARGS...]
+Run a container from an image.
+docker start [CONTAINER]
+Start a stopped container.
+docker stop [CONTAINER]
+Stop a running container.
+docker restart [CONTAINER]
+Restart a container.
+docker rm [CONTAINER]
+Remove a container.
+docker exec [CONTAINER] [COMMAND]
+Execute a command inside a running container.
+Image Management
+docker build [OPTIONS] PATH
+Build an image from a Dockerfile.
+docker pull [IMAGE]
+Pull an image from a repository.
+docker push [IMAGE]
+Push an image to a repository.
+docker rmi [IMAGE]
+Remove an image.
+docker images
+List all images.
+Networking
+docker network create [OPTIONS] NETWORK_NAME
+Create a new network.
+docker network ls
+List all networks.
+docker network inspect [NETWORK]
+Inspect a network.
+docker network rm [NETWORK]
+Remove a network.
+Volume Management
+docker volume create [VOLUME_NAME]
+Create a volume.
+docker volume ls
+List all volumes.
+docker volume rm [VOLUME_NAME]
+Remove a volume.
+Logging and Debugging
+docker logs [CONTAINER]
+Show logs of a container.
+docker stats [CONTAINER]
+Display real-time stats.
+docker inspect [RESOURCE]
+Inspect details of a container or image.
+docker ps
+List running containers.
+docker ps -a
+List all containers.
+Kubernetes Commands
+kubectl Basics
+kubectl get [RESOURCE]
+List resources (e.g., kubectl get pods).
+kubectl describe [RESOURCE] [NAME]
+Show detailed information about a resource.
+kubectl create -f [FILE]
+Create resources from a YAML/JSON file.
+kubectl apply -f [FILE]
+Apply changes to resources from a file.
+kubectl delete [RESOURCE] [NAME]
+Delete a resource.
+kubectl edit [RESOURCE] [NAME]
+Edit a resource in place.
+Pod and Deployment Management
+kubectl logs [POD]
+Show logs of a pod.
+kubectl exec [POD] -- [COMMAND]
+Execute a command inside a pod.
+kubectl scale deployment [DEPLOYMENT_NAME] --replicas=[N]
+Scale a deployment.
+kubectl rollout status deployment [DEPLOYMENT_NAME]
+Check deployment rollout status.
+kubectl rollout undo deployment [DEPLOYMENT_NAME]
+Undo the last rollout.
+Namespace Management
+kubectl get namespaces
+List all namespaces.
+kubectl create namespace [NAMESPACE_NAME]
+Create a new namespace.
+kubectl delete namespace [NAMESPACE_NAME]
+Delete a namespace.
+Debugging and Troubleshooting
+kubectl get events
+Show recent events in the cluster.
+kubectl describe pod [POD_NAME]
+Show details of a pod.
+kubectl top pod
+Show resource usage of pods.
+kubectl debug [POD_NAME]
+Debug a pod (requires additional setup).
+Ansible Commands
+Ad-Hoc Commands
+ansible [HOSTS] -m [MODULE] -a "[ARGS]"
+Run an ad-hoc command on specified hosts.
+Example: ansible all -m ping.
+Playbook Management
+ansible-playbook [PLAYBOOK.yml]
+Run a playbook.
+ansible-playbook [PLAYBOOK.yml] --check
+Perform a dry run.
+ansible-playbook [PLAYBOOK.yml] --tags [TAG_NAME]
+Run tasks with a specific tag.
+ansible-playbook [PLAYBOOK.yml] --limit [HOSTS]
+Limit execution to specific hosts.
+Inventory Management
+ansible-inventory --list
+Display inventory in JSON format.
+ansible-inventory --graph
+Visualize the inventory as a graph.
+Vault Management
+ansible-vault create [FILE]
+Create a new encrypted file.
+ansible-vault edit [FILE]
+Edit an encrypted file.
+ansible-vault decrypt [FILE]
+Decrypt a file.
+ansible-vault encrypt [FILE]
+Encrypt a file.
+Debugging
+ansible-playbook [PLAYBOOK.yml] --verbose
+Run with verbose output.
+ansible all -m setup
+Gather and display facts about hosts.
+Terraform Commands
+Initialization and Setup
+terraform init
+Initialize a working directory.
+terraform validate
+Validate the configuration files.
+terraform fmt
+Format Terraform configuration files.
+Planning and Applying
+terraform plan
+Generate an execution plan.
+terraform apply
+Apply the planned changes.
+terraform apply -auto-approve
+Apply changes without asking for confirmation.
+State Management
+terraform state list
+List all resources in the state.
+terraform state show [RESOURCE]
+Show details about a resource in the state.
+terraform state rm [RESOURCE]
+Remove a resource from the state.
+terraform state mv [SOURCE] [DESTINATION]
+Move a resource in the state.
+Resource Management
+terraform import [ADDRESS] [ID]
+Import an existing resource into Terraform.
+terraform refresh
+Update the state file to match real-world resources.
+Destroy
+terraform destroy
+Destroy the managed infrastructure.
+terraform destroy -auto-approve
+Destroy without asking for confirmation.
+Workspace Management
+terraform workspace new [WORKSPACE_NAME]
+Create a new workspace.
+terraform workspace select [WORKSPACE_NAME]
+Switch to a workspace.
+terraform workspace list
+List all workspaces.

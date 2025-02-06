@@ -1,0 +1,34 @@
+--------------------------------------------------
+uname, #Returns keyname of Operating System in Linux
+uname -mp 
+x86_64 i386
+# m -> shows hardware name: x86_64
+# p -> prints processor architecture name: i386
+# s -> prints Operating System name.
+# r -> prints last release
+# v -> prints version
+# n -> prints node network names
+# a -> prints all available information
+----------------------------------------------------
+uptime, 
+Uptime is a command that returns information about how 
+long your system has been running together with the current time,
+number of users with running sessions, and the system load 
+averages for the past 1, 5, and 15 minutes. It can also filter the information 
+displayed at once depending on your specified options.
+uptime [option]
+uptime -> 09:10:18 up 106 days, 32 min, 2 users, load average: 0.22, 0.41, 0.32
+uptime -s ->will display the date/time since when the system has been running.
+------------------------------------------------
+df, -h df [OPTION]... [FILE]...
+If no file name is given, it displays the space 
+available on all currently mounted file systems.
+df /path/file -> it will show mount information of that particular file.
+df -a -> If you want to display all the file system,
+df -h /home/mandeep -> Use -h option to display size in power of 1024
+df -H /home/mandeep -> Use -H option to display sizes in power of 1000
+----------------------------------------------
+top,
+top command is used to show the Linux processes. It provides a dynamic real-time view of the running system
+Command After Specific repetition: Top output keep refreshing until you press ‘q‘.
+top -n 10 -> number repetitions

@@ -1,0 +1,6 @@
+- hosts: web1
+  tasks:
+    - name: Transfer template to web server
+      template: 
+        src: table.j2 # target file in local machine
+        dest: /var/www/html/intex.php

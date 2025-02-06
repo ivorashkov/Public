@@ -1,0 +1,42 @@
+curl, curl [options] [URL...]
+cURL, which stands for client URL, is a command line tool that developers 
+use to transfer data to and from a server. At the most fundamental, 
+cURL lets you talk to a server by specifying the location (in the form of a URL)
+and the data you want to send.
+
+curl -o [file_name] [URL...] / curl -o hello.zip ftp://speedtest.tele2.net/1MB.zip
+-o: saves the downloaded file on the local machine with the name provided in the parameters. 
+-O: This option downloads the file and saves it with the same name as in the URL. 
+-C -: This option resumes download which has been stopped due to some reason. 
+This is useful when downloading large files and was interrupted. 
+curl -C - -O ftp://speedtest.tele2.net/1MB.zip
+curl --limit-rate [value] [URL]
+curl --limit-rate 1000K -O ftp://speedtest.tele2.net/1MB.zip
+-u: curl also provides options to download files from user authenticated FTP servers. 
+curl -u {username}:{password} [FTP_URL] / curl -u demo:password -O ftp://test.rebex.net/readme.txt
+-T: This option helps to upload a file to the FTP server. 
+curl -u {username}:{password} -T {filename} {FTP_Location}
+curl [URL...] --libcurl [filename] #  If this option is appended to any cURL command, 
+it outputs the C source code that uses libcurl for the specified option.
+-x, –proxy: curl also lets us use a proxy to access the URL. 
+curl -x [proxy_name]:[port] [URL...]
+* If the proxy requires authentication, it can be used with the command: 
+curl -u [user]:[password] -x [proxy_name]:[port] [URL...]
+
+------------------------------------------------------------------------------
+wget needs additional installation
+Wget is a command-line utility for downloading files from the web
+wget [options] [url]
+tail -f wget-log - To watch the status of the download
+
+wget -m https://example.com -This will create a complete local copy of 
+the website by following and downloading all internal links 
+as well as the website resources (JavaScript, CSS, Images).
+
+wget -m -k -p https://example.com
+
+The -k option will cause wget to convert the 
+links in the downloaded documents to make them 
+suitable for local viewing. The -p option will
+tell wget to download all necessary files for 
+displaying the HTML page.

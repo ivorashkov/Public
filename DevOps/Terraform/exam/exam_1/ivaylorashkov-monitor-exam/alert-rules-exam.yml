@@ -1,0 +1,10 @@
+groups:
+  - name: Connection was slow
+    rules:
+      - alert: SlowConnection
+        expr: probe_http_duration_seconds{phase="connect"} > 0.001
+        for: 3s
+        labels:
+          severity:
+        annotations:
+          summary: "Connection tool more than 0.1 milliseconds"
