@@ -23,7 +23,7 @@ pipeline {
         HTTPS_PROXY = squid.getSquidUrl()
         http_proxy = squid.getSquidUrl()
         https_proxy = squid.getSquidUrl()
-        NO_PROXY = 'rxpdev.com,metadata.google.internal,gpecom.io'
+        NO_PROXY = 'url1.com,url2.com,url3.com'
         VAULT_ENGINE_VERSION = vaultHelper.getVaultEngineVersion()
     }
 
